@@ -1,13 +1,18 @@
 import type { MetadataRoute } from 'next';
-import { pagePath, type Page } from '@/lib/i18n';
+import { langs, pagePath, type Page } from '@/lib/i18n';
 import { absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-static';
-const url = absoluteUrl;
+
+// Public pages only (the Studio and API routes are never listed), with the same canonical URLs the pages declare.
+// Entries carry just the URL and its language alternates (incl. x-default, matching each page's hreflang tags).
+// No changeFrequency/priority/lastModified: Google ignores the first two, and Next.js writes them after the
+// <xhtml:link> alternates, which breaks the sitemaps.org schema's required element order.
+const pages: Page[] = ['home', 'story'];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  return (['home', 'story'] as Page[]).flatMap(page => (['en', 'es'] as const).map(lang => ({
-    url: url(pagePath(page, lang)), changeFrequency: 'monthly' as const, priority: page === 'home' ? 1 : 0.8,
-    alternates: { languages: { en: url(pagePath(page, 'en')), es: url(pagePath(page, 'es')) } },
+  return pages.flatMap(page => langs.map(lang => ({
+    url: absoluteUrl(pagePath(page, lang)),
+    alternates: { languages: { en: absoluteUrl(pagePath(page, 'en')), es: absoluteUrl(pagePath(page, 'es')), 'x-default': absoluteUrl(pagePath(page, 'en')) } },
   })));
 }
