@@ -53,17 +53,21 @@ Store hours are Monday–Friday, Saturday, and Sunday. The old "Monday – Satur
 
 ### Instant updates when the owners publish
 
-The live site caches pages and refreshes them the moment Sanity reports a publish, so owners never need to redeploy or wait. Set this up once:
+The live site caches pages and refreshes them the moment Sanity reports a publish, so owners never need to redeploy or wait. Every Sanity-managed section (Store Settings, Featured Photos, Fresh Finds, Social Features, Announcements) is read in one cached request tagged `sanity`, and the webhook invalidates exactly that tag, nothing else. Set this up once:
 
-1. Generate a long random secret (for example `openssl rand -hex 32`) and add it on your host as `SANITY_REVALIDATE_SECRET`. It is server-only: never prefix it with `NEXT_PUBLIC_`. Redeploy so the site picks it up.
-2. In [sanity.io/manage](https://www.sanity.io/manage) → your project → **API → Webhooks → Create webhook**:
-   - **URL:** `https://your-domain.com/api/revalidate/` (keep the trailing slash)
+1. **Create the secret.** Generate a long random value, for example with `openssl rand -hex 32`.
+2. **Add it in Vercel.** Project → **Settings → Environment Variables** → add `SANITY_REVALIDATE_SECRET` with that value for the **Production** environment (and Preview if you use it). It is server-only: never prefix it with `NEXT_PUBLIC_`. Then **redeploy** (Deployments → ⋯ → Redeploy), because environment variables only apply to new deployments.
+3. **Create the webhook in Sanity.** [sanity.io/manage](https://www.sanity.io/manage) → your project → **API → Webhooks → Create webhook**:
+   - **Name:** Revalidate website
+   - **URL:** `https://YOUR-DOMAIN/api/revalidate/`, e.g. `https://la-segundita-nine.vercel.app/api/revalidate/`. Keep the **trailing slash**: without it the site answers with a redirect, which webhook POSTs should not rely on.
    - **Dataset:** `production`
-   - **Trigger on:** Create, Update, Delete
+   - **Trigger on:** ✅ Create ✅ Update ✅ Delete
    - **Filter:** `_type in ["storeSettings", "featuredPhotos", "freshFind", "socialFeature", "announcement"]`
-   - **HTTP method:** POST, with **Drafts** and **Versions** left off (only publishes matter)
+   - **Projection:** leave empty
+   - **Status:** Enabled · **HTTP method:** POST · **API version:** leave the default
+   - **Drafts:** off · **Versions:** off (only publishes change the live site)
    - **Secret:** the same value as `SANITY_REVALIDATE_SECRET`
-3. Publish any small change and reload the site: it should show up right away. The webhook's **Attempts log** in Sanity shows `200` for each delivery (a `401` means the secret doesn't match).
+4. **Test it.** Publish a small change (e.g. a Fresh Find caption) and reload the site: it shows up right away. In Sanity, the webhook's **Attempts log** should show `200`. A `401` means the two secrets don't match; a `500` saying the secret is not set means step 2's variable is missing or the site wasn't redeployed.
 
 If a webhook delivery is ever missed, pages still refresh on their own within an hour. In local development (`npm run dev`) content is always fetched fresh, so a reload shows the latest published content without any webhook.
 
