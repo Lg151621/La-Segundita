@@ -12,11 +12,11 @@ const our = (lang: Lang, name: string) => `${copy[lang].footer.our} ${name}`;
 export function WelcomeSection({ lang, content }: { lang: Lang; content: SiteContent }) {
   const w = copy[lang].welcome;
   return <section className="welcome chapter paper" aria-labelledby="welcome-title"><div className="container welcome-grid">
-    <figure className="welcome-photo reveal">
+    <figure className="welcome-photo reveal-settle">
       <div className="mounted"><Photo lang={lang} source={content.photos.welcome} label={w.photo}/></div>
       <figcaption className="photo-caption">{content.welcomeCaption ? t(content.welcomeCaption, lang) : w.caption}</figcaption>
     </figure>
-    <div className="welcome-copy reveal">
+    <div className="welcome-copy reveal-right">
       <span className="tag-label">{w.eyebrow}</span>
       <h2 id="welcome-title">{w.title[0]}<br/>{w.title[1]}</h2>
       <p className="deck">{w.subtitle}</p>
@@ -29,7 +29,7 @@ export function WelcomeSection({ lang, content }: { lang: Lang; content: SiteCon
 export function FreshFinds({ lang, content }: { lang: Lang; content: SiteContent }) {
   const f = copy[lang].finds;
   return <section id="fresh-finds" className="finds chapter parchment" aria-labelledby="finds-title"><div className="container">
-    <div className="section-heading split">
+    <div className="section-heading split reveal">
       <div><span className="tag-label">{f.eyebrow}</span><h2 id="finds-title">{f.title}</h2></div>
       <p className="aside-note">{f.intro[0]}<br/>{f.intro[1]}</p>
     </div>
@@ -43,7 +43,7 @@ export function FreshFinds({ lang, content }: { lang: Lang; content: SiteContent
         </article>
       </li>)}</ul>
     </div>}
-    <div className="finds-bottom">
+    <div className="finds-bottom reveal">
       <div><p>{f.follow}</p><small>{f.note}</small></div>
       <a href="#follow" className="text-link">{f.seeLatest}<Icon name="arrow"/></a>
     </div>
@@ -57,14 +57,14 @@ export function WhyShop({ lang }: { lang: Lang }) {
   return <section className="why chapter chocolate" aria-labelledby="why-title"><div className="container">
     <span className="tag-label light">{y.eyebrow}</span>
     <h2 id="why-title">{y.title}</h2>
-    <div className="why-grid">{y.items.map((item, i) => <article className="reveal" key={item.title}><span className="benefit-mark" aria-hidden="true">{marks[i]}</span><h3>{item.title}</h3><p>{item.body}</p></article>)}</div>
+    <div className="why-grid">{y.items.map((item, i) => <article key={item.title}><span className="benefit-mark" aria-hidden="true">{marks[i]}</span><h3>{item.title}</h3><p>{item.body}</p></article>)}</div>
   </div></section>;
 }
 
 export function SocialSection({ lang, content }: { lang: Lang; content: SiteContent }) {
   const s = copy[lang].social;
   return <section id="follow" className="social chapter rose" aria-labelledby="social-title"><div className="container">
-    <div className="social-heading">
+    <div className="social-heading reveal">
       <span className="tag-label light">{s.eyebrow}</span>
       <h2 id="social-title">{s.title} <Butterfly/></h2>
       <p>{s.body}</p>
@@ -87,7 +87,7 @@ export function VisitSection({ lang, content }: { lang: Lang; content: SiteConte
   const s = content.settings;
   const v = copy[lang].visit;
   return <section id="visit" className="visit chapter paper" aria-labelledby="visit-title"><div className="container visit-grid">
-    <div className="visit-copy">
+    <div className="visit-copy reveal-left">
       <span className="tag-label">{v.eyebrow}</span>
       <h2 id="visit-title">{v.title[0]}<br/>{v.title[1]}</h2>
       <dl className="hours-sign">
@@ -97,7 +97,7 @@ export function VisitSection({ lang, content }: { lang: Lang; content: SiteConte
       </dl>
       <ActionLink lang={lang} href={s.directions} className="button primary" label={copy[lang].directionsLabel}>{v.directions}</ActionLink>
     </div>
-    <div className="map-print" role="img" aria-label={v.mapLabel}>
+    <div className="map-print reveal-settle" role="img" aria-label={v.mapLabel}>
       <div className="map" aria-hidden="true"><div className="map-block block-1"/><div className="map-block block-2"/><div className="map-block block-3"/><div className="map-road road-1"/><div className="map-road road-2"/><div className="map-road road-3"/><svg className="compass" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="currentColor"/><path d="M20 5l4 15-4 15-4-15z" fill="currentColor"/><text x="20" y="4.5" textAnchor="middle" fontSize="5" fill="currentColor">N</text></svg></div>
       <div className="map-card" aria-hidden="true"><Icon name="pin"/><strong>La Segundita</strong><p>{v.mapTagline}</p><small>{v.mapSoon}</small></div>
     </div>
@@ -106,7 +106,7 @@ export function VisitSection({ lang, content }: { lang: Lang; content: SiteConte
 
 export function ContactSection({ lang, content }: { lang: Lang; content: SiteContent }) {
   const c = copy[lang].contact;
-  return <section id="contact" className="contact chapter marigold" aria-labelledby="contact-title"><Garland/><div className="container">
+  return <section id="contact" className="contact chapter marigold" aria-labelledby="contact-title"><Garland/><div className="container reveal">
     <span className="tag-label">{c.eyebrow}</span>
     <h2 id="contact-title">{c.title}</h2>
     <p>{c.body}</p>
