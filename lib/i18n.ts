@@ -1,8 +1,9 @@
 // Site copy in English and Spanish. English is the approved source; keep both in step.
 export type Lang = 'en' | 'es';
-export type Localized = string | { en: string; es: string };
+// Spanish is optional on CMS content; it falls back to English.
+export type Localized = string | { en: string; es?: string };
 export const langs: Lang[] = ['en', 'es'];
-export const t = (value: Localized, lang: Lang) => (typeof value === 'string' ? value : value[lang]);
+export const t = (value: Localized, lang: Lang) => (typeof value === 'string' ? value : value[lang]?.trim() || value.en);
 
 export type Page = 'home' | 'story';
 export const pagePath = (page: Page, lang: Lang) => `${lang === 'es' ? '/es' : ''}${page === 'story' ? '/our-story/' : '/'}`;
@@ -14,11 +15,13 @@ export const copy = {
     brandHome: 'La Segundita home',
     openNav: 'Open navigation', closeNav: 'Close navigation', mainNav: 'Main navigation', footerNav: 'Footer navigation',
     switchLang: 'Ver en español', switchLangShort: 'ES',
+    // Search titles and descriptions. `place` is the city from Store Settings (e.g. "Blythe, CA"), or null until it is known.
     meta: {
-      homeTitle: 'La Segundita | Good Finds. New Beginnings.',
-      homeDescription: 'Meet La Segundita, a family-owned thrift shop bringing together affordable fashion, unique pieces, and hidden treasures.',
-      storyTitle: 'Our Story',
-      storyDescription: 'Meet the family behind La Segundita, a family-owned thrift store built around giving clothing another life and helping our community.',
+      homeTitle: (place: string | null) => `La Segundita | Family-Owned Thrift Store${place ? ` in ${place}` : ''}`,
+      homeDescription: (place: string | null) => `La Segundita is a family-owned thrift store${place ? ` in ${place}` : ''}, bringing together affordable fashion, unique pieces, and hidden treasures.`,
+      storyTitle: 'Our Story: The Family Behind La Segundita',
+      storyDescription: (place: string | null) => `Meet the family behind La Segundita, a family-owned thrift store${place ? ` in ${place}` : ''} built around giving clothing another life and helping our community.`,
+      businessType: 'Family-owned thrift store',
     },
     hero: {
       eyebrow: 'A LITTLE SHOP. A LOT OF HEART.', title: ['Good finds.', 'New beginnings.'],
@@ -41,7 +44,7 @@ export const copy = {
       eyebrow: 'THE JOY IS IN THE FIND', title: 'Fresh Finds', intro: ['A little vintage. A little unexpected.', 'Always worth a second look.'],
       follow: 'New pieces arrive regularly — follow us to see the latest drops.',
       note: 'Illustrative finds. Availability changes with every visit.',
-      tiktok: 'Follow on TikTok', instagram: 'Follow on Instagram', lot: 'No.',
+      seeLatest: 'See the latest on our socials', lot: 'No.',
     },
     why: {
       eyebrow: 'GOOD FOR YOUR CLOSET. GOOD FOR YOUR COMMUNITY.', title: 'Why Shop La Segundita?',
@@ -58,7 +61,7 @@ export const copy = {
     },
     visit: {
       eyebrow: 'YOUR NEXT FAVORITE IS WAITING', title: ['Come Find Your', 'Next Treasure'],
-      address: 'Address', hours: 'Store Hours', weekdays: 'Monday – Saturday', sunday: 'Sunday', phone: 'Phone',
+      location: 'Location', address: 'Address', hours: 'Store Hours', mondayFriday: 'Monday – Friday', saturday: 'Saturday', sunday: 'Sunday', short: { mondayFriday: 'Mon–Fri', saturday: 'Sat', sunday: 'Sun' }, phone: 'Phone',
       directions: 'Get Directions',
       mapLabel: 'Map placeholder: store location to be added', mapTagline: 'Your neighborhood treasure stop.', mapSoon: 'MAP & LOCATION COMING SOON',
     },
@@ -79,8 +82,9 @@ export const copy = {
       tagline: ['Good finds. New beginnings.', 'From our family to yours.'],
       visit: 'Visit', explore: 'Explore', follow: 'Follow',
       rights: '© 2026 La Segundita. All Rights Reserved.', motto: 'SECONDHAND, WITH A LITTLE CORAZÓN.',
-      our: 'Our',
+      our: 'Our', hoursLink: 'Hours & directions',
     },
+    announcementLabel: 'Store announcement',
     notFound: { title: 'Page not found', body: 'This page wandered off the rack.', home: 'Back to La Segundita' },
     soon: 'will be added soon.', thisLink: 'This link', directionsLabel: 'Store directions', phoneLabel: 'Our phone number',
   },
@@ -91,10 +95,11 @@ export const copy = {
     openNav: 'Abrir navegación', closeNav: 'Cerrar navegación', mainNav: 'Navegación principal', footerNav: 'Navegación del pie de página',
     switchLang: 'View in English', switchLangShort: 'EN',
     meta: {
-      homeTitle: 'La Segundita | Buenos hallazgos. Nuevos comienzos.',
-      homeDescription: 'Conoce La Segundita, una tienda de segunda mano familiar que reúne moda accesible, piezas únicas y tesoros escondidos.',
-      storyTitle: 'Nuestra Historia',
-      storyDescription: 'Conoce a la familia detrás de La Segundita, una tienda de segunda mano familiar que le da otra vida a la ropa y apoya a nuestra comunidad.',
+      homeTitle: (place: string | null) => `La Segundita | Tienda de segunda mano familiar${place ? ` en ${place}` : ''}`,
+      homeDescription: (place: string | null) => `La Segundita es una tienda de segunda mano familiar${place ? ` en ${place}` : ''} que reúne moda accesible, piezas únicas y tesoros escondidos.`,
+      storyTitle: 'Nuestra historia: la familia detrás de La Segundita',
+      storyDescription: (place: string | null) => `Conoce a la familia detrás de La Segundita, una tienda de segunda mano familiar${place ? ` en ${place}` : ''} que le da otra vida a la ropa y apoya a nuestra comunidad.`,
+      businessType: 'Tienda de segunda mano familiar',
     },
     hero: {
       eyebrow: 'UNA TIENDITA. MUCHO CORAZÓN.', title: ['Buenos hallazgos.', 'Nuevos comienzos.'],
@@ -117,7 +122,7 @@ export const copy = {
       eyebrow: 'LA ALEGRÍA ESTÁ EN EL HALLAZGO', title: 'Hallazgos recientes', intro: ['Un poco vintage. Un poco inesperado.', 'Siempre vale la pena una segunda mirada.'],
       follow: 'Llegan piezas nuevas con frecuencia: síguenos para ver lo más reciente.',
       note: 'Hallazgos ilustrativos. La disponibilidad cambia en cada visita.',
-      tiktok: 'Síguenos en TikTok', instagram: 'Síguenos en Instagram', lot: 'No.',
+      seeLatest: 'Mira lo más reciente en redes', lot: 'No.',
     },
     why: {
       eyebrow: 'BUENO PARA TU CLÓSET. BUENO PARA TU COMUNIDAD.', title: '¿Por qué comprar en La Segundita?',
@@ -134,7 +139,7 @@ export const copy = {
     },
     visit: {
       eyebrow: 'TU PRÓXIMO FAVORITO TE ESPERA', title: ['Ven a encontrar', 'tu próximo tesoro'],
-      address: 'Dirección', hours: 'Horario', weekdays: 'Lunes – Sábado', sunday: 'Domingo', phone: 'Teléfono',
+      location: 'Ubicación', address: 'Dirección', hours: 'Horario', mondayFriday: 'Lunes – Viernes', saturday: 'Sábado', sunday: 'Domingo', short: { mondayFriday: 'Lun–Vie', saturday: 'Sáb', sunday: 'Dom' }, phone: 'Teléfono',
       directions: 'Cómo llegar',
       mapLabel: 'Mapa provisional: la ubicación de la tienda se agregará pronto', mapTagline: 'Tu tiendita de tesoros del barrio.', mapSoon: 'MAPA Y UBICACIÓN PRÓXIMAMENTE',
     },
@@ -155,8 +160,9 @@ export const copy = {
       tagline: ['Buenos hallazgos. Nuevos comienzos.', 'De nuestra familia a la tuya.'],
       visit: 'Visítanos', explore: 'Explora', follow: 'Síguenos',
       rights: '© 2026 La Segundita. Todos los derechos reservados.', motto: 'DE SEGUNDA MANO, CON UN POQUITO DE CORAZÓN.',
-      our: 'Nuestro',
+      our: 'Nuestro', hoursLink: 'Horario y cómo llegar',
     },
+    announcementLabel: 'Aviso de la tienda',
     notFound: { title: 'Página no encontrada', body: 'Esta página se salió del perchero.', home: 'Volver a La Segundita' },
     soon: 'se agregará pronto.', thisLink: 'Este enlace', directionsLabel: 'Indicaciones para llegar', phoneLabel: 'Nuestro número de teléfono',
   },

@@ -1,9 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { pagePath, type Page } from '@/lib/i18n';
-import { store } from '@/lib/store';
+import { absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-static';
-const url = (path: string) => new URL(path, store.siteUrl).href;
+const url = absoluteUrl;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return (['home', 'story'] as Page[]).flatMap(page => (['en', 'es'] as const).map(lang => ({

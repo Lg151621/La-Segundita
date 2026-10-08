@@ -1,7 +1,8 @@
 import type { MetadataRoute } from 'next';
-import { store } from '@/lib/store';
+import { absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-static';
 export default function robots(): MetadataRoute.Robots {
-  return { rules: { userAgent: '*', allow: '/' }, sitemap: new URL('/sitemap.xml', store.siteUrl).href };
+  // Public pages are crawlable; the Sanity Studio and the webhook endpoint are not content.
+  return { rules: { userAgent: '*', allow: '/', disallow: ['/studio/', '/api/'] }, sitemap: absoluteUrl('/sitemap.xml') };
 }

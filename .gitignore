@@ -4,3 +4,5 @@ out/
 *.tsbuildinfo
 .DS_Store
 .impeccable/review/
+.env*.local
+.env

@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next';
-// Static export: next/image keeps lazy loading and sizing, but skips the server optimizer.
-// Export photos at roughly 2x their displayed size (about 1600px wide) before adding them to public/images/.
-const config: NextConfig = { output: 'export', trailingSlash: true, images: { unoptimized: true },
-  // Two root layouts (English and Spanish) need a global 404 page.
-  experimental: { globalNotFound: true } };
+
+// Hosted on a Next.js server (e.g. Vercel) so Sanity edits reach the live site without a rebuild:
+// pages are static and refresh from Sanity hourly, or right away via /api/revalidate/.
+const config: NextConfig = {
+  trailingSlash: true,
+  // Two root layouts (English and Spanish, plus the Studio) need a global 404 page.
+  experimental: { globalNotFound: true },
+};
 export default config;

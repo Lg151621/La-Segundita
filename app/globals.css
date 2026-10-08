@@ -351,7 +351,7 @@ p { max-width: 62ch; text-wrap: pretty; }
 .footer .brand { color: var(--cream); }
 .footer .brand-name small { color: var(--cream-soft); }
 .footer-brand p { margin-top: 22px; font-family: var(--italic); font-style: italic; font-size: 1.2rem; line-height: 1.5; color: var(--cream-soft); }
-.footer-col h2 { font-family: var(--sans); font-size: var(--fs-label); font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--marigold-soft); margin-bottom: 16px; }
+.footer-heading { font-family: var(--sans); font-size: var(--fs-label); font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--marigold-soft); margin-bottom: 16px; }
 .footer-col ul { display: grid; gap: 2px; }
 .footer-link { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0; border: 0; background: none; font-size: 1rem; color: var(--cream); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 6px; transition: text-decoration-color .2s, color .2s; }
 .footer-link .icon { width: .9em; height: .9em; opacity: .7; }
@@ -454,6 +454,9 @@ p { max-width: 62ch; text-wrap: pretty; }
   .footer-main { grid-template-columns: 1fr 1fr; }
   .footer-col:last-child { grid-column: 1 / -1; }
   .dropcap::first-letter { font-size: 3.6em; }
+  /* Keep the portrait's marigold inside the viewport on phones. */
+  .portrait-flower { right: -8px; width: 52px; }
+  .owner.reverse .portrait-flower { left: -8px; }
 }
 
 /* ---------- 404 ---------- */
@@ -461,3 +464,19 @@ p { max-width: 62ch; text-wrap: pretty; }
 .not-found .container { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .not-found .lede { color: var(--ink); }
 .not-found .button-row { margin-top: 18px; }
+
+/* Subtitles set as paragraphs keep the display look (beats `.chapter p` colors). */
+.chapter p.deck { color: var(--terracotta); max-width: none; line-height: 1.2; }
+.footer-hours-link { margin-top: 6px; }
+.footer-fact { margin-top: 10px; font-size: var(--fs-label); font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--marigold-soft); }
+
+/* ---------- CMS additions ---------- */
+/* Announcement bar above the masthead; it scrolls away with the page and never affects the sticky header. */
+.announcement { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 9px var(--gutter); background: var(--ink); color: var(--cream); text-align: center; font-size: var(--fs-small); font-weight: 600; letter-spacing: .02em; line-height: 1.4; }
+.announcement p { color: var(--cream); max-width: none; }
+.announcement .flower { width: 18px; height: 18px; flex: none; }
+.find-caption { padding: 0 4px 14px; margin-top: -8px; font-family: var(--italic); font-style: italic; font-size: .95rem; line-height: 1.35; color: var(--ink-soft); }
+.print-link { display: block; color: inherit; }
+.print-label .icon { width: .7em; height: .7em; margin-left: 8px; vertical-align: middle; }
+.plain-link { text-decoration: underline; text-decoration-color: var(--rule-soft); text-underline-offset: 4px; }
+.plain-link:hover { text-decoration-color: currentColor; }

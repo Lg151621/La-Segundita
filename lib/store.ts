@@ -5,10 +5,9 @@
 import type { Localized } from './i18n';
 
 export const store = {
-  // Set NEXT_PUBLIC_SITE_URL (e.g. https://lasegundita.com) before a production build.
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
   address: { en: '[STORE ADDRESS]', es: '[DIRECCIÓN DE LA TIENDA]' } as Localized,
-  hours: { weekdays: { en: '[HOURS]', es: '[HORARIO]' } as Localized, sunday: { en: '[HOURS]', es: '[HORARIO]' } as Localized },
+  // Fallbacks only; Store Settings in Sanity is the source of truth. Saturday and Sunday are the approved real hours.
+  hours: { mondayFriday: { en: '[HOURS]', es: '[HORARIO]' } as Localized, saturday: '9:00 AM – 3:00 PM' as Localized, sunday: { en: 'Closed', es: 'Cerrado' } as Localized },
   phone: { en: '[STORE PHONE NUMBER]', es: '[TELÉFONO DE LA TIENDA]' } as Localized,
   phoneHref: '', directions: '',
   socials: { instagram: '', tiktok: '', depop: '', poshmark: '' },
