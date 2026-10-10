@@ -6,6 +6,8 @@ Run from the repository root:
 node scripts/security/recommend-security-checks.mjs
 ```
 
+With no arguments it inventories the current directory and uses the bundled catalog; Phase 4A adds `--root DIR`, `--catalog FILE`, `--reference-root DIR`, and `--project-evidence FILE` / `--no-project-evidence` for other projects (see [PORTABILITY.md](PORTABILITY.md)). Unknown, repeated, or value-less options, and roots or files that are missing, symlinked, oversized, or not regular, fail closed with a short message that does not echo local paths.
+
 The command runs the existing Phase 3D inventory, reads `SECURITY-CHECK-CATALOG.json`, validates both contracts, and writes one JSON report to **stdout only**. It uses built-in Node APIs, makes no network request, reads no `.env` values, and does not execute catalog checks. Pipe to a JSON viewer if desired; redirecting output to a file is a separate, explicit shell action. Invalid inputs exit nonzero with a short error and no report.
 
 ## Report contract
@@ -14,11 +16,13 @@ The output has `schemaVersion: 1`, `tool: "security-check-recommendations"`, `in
 
 `recommended` means an always-relevant check or at least one matching signal with concrete detected evidence. `needs_human_review` means the match is uncertain because evidence is partial, contradictory, missing, low-confidence, or the scan is incomplete. `not_currently_indicated` means the relevant feature was not found **in the inspected source** of a complete scan. It is not an absence finding or a waiver; external and offline practices still need confirmation. An incomplete scan turns source-based non-detections into human-review items. A clear positive remains recommended even if another part of the scan is incomplete, and `scan.complete` remains false.
 
+Phase 4A adds `projectSupport` (framework and package-manager status from the inventory, plus `nonDetectionReliable`), per-check `supportNotes[]`, and per-check `projectEvidence[]` with an omitted count. These fields are additive within report schema version 1. When the framework status is anything other than `supported` (`partial`, `unsupported`, or `unknown`, including an inventory without a support block), `not_currently_indicated` is never used: unmatched conditional checks become `needs_human_review` with a rationale naming the support status. When the package manager is not supported, checks marked `requiresSupportedPackageManager` keep their disposition but carry a note that the existing npm-only automation does not cover the project, and their human-confirmation item asks for an equivalent check. Neither state means the project is insecure or secure.
+
 The `humanConfirmation[]` list records a follow-up for each check: review the actual result of existing automation, arrange a proposed check, resolve uncertain applicability, or verify external use behind a bounded non-detection. The `boundaries` object states that this tool executed zero checks and determined no check result, risk acceptance, or legal compliance. `executionStatus: "automated_now"` means separate automation exists; this report does not read its latest result.
 
 ## Current La Segundita example
 
-The current complete source scan inspects 47 files. It detects `nextjs`, `sanity_cms`, `api_routes`, `webhooks`, and `analytics`. The report recommends 11 of 15 catalog checks, including CMS access/content, webhook authentication/replay, API input, analytics privacy, dependency audit, and secret scanning. The four visitor-auth, public-form, payment, and separate-database checks are `not_currently_indicated` from source only. Sanity content storage is covered by CMS checks, not the separate `database` signal.
+The current complete source scan inspects 47 files, identifies the framework as `nextjs` and the package manager as `npm` (both `supported`), and finds all project-local evidence files `present`. It detects `nextjs`, `sanity_cms`, `api_routes`, `webhooks`, and `analytics`. The report recommends 11 of 15 catalog checks, including CMS access/content, webhook authentication/replay, API input, analytics privacy, dependency audit, and secret scanning. The four visitor-auth, public-form, payment, and separate-database checks are `not_currently_indicated` from source only. Sanity content storage is covered by CMS checks, not the separate `database` signal.
 
 Live CMS roles and datasets, webhook delivery and replay controls, deployed headers, actual analytics collection, and offline or hosted business flows remain outside this source scan. The engine does not declare HIPAA, PCI DSS, GDPR, CCPA, or any other legal regime applicable. The approved three-advisory dependency baseline is unchanged; only its separate workflow can report its current result.
 

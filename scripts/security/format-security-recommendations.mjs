@@ -15,6 +15,8 @@ const CONFIDENCES = new Set(['high', 'medium', 'low']);
 const EXECUTION_STATUSES = new Set(['automated_now', 'future_implementation', 'human_review']);
 const MANIFEST_STATES = new Set(['valid', 'missing', 'invalid', 'too_large']);
 const ID_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
+const SUPPORT_STATUSES = new Set(['supported', 'partial', 'unsupported', 'unknown']);
+const EVIDENCE_STATUSES = new Set(['present', 'missing', 'not_regular_file', 'not_checked']);
 
 function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function integer(value, max) { return Number.isSafeInteger(value) && value >= 0 && value <= max; }
@@ -40,6 +42,19 @@ function escaped(value) {
 }
 function code(value) { return `<code>${escaped(value)}</code>`; }
 function invalid() { throw new Error('Invalid security recommendation report'); }
+function shortStrings(value, max) {
+  return Array.isArray(value) && value.length <= max && value.every(item => typeof item === 'string' && item.length > 0 && item.length <= 240);
+}
+// Optional Phase 4A fields: older reports without them remain valid.
+function validSupportItem(item) {
+  return object(item) && SUPPORT_STATUSES.has(item.status) &&
+    (item.id === null || (typeof item.id === 'string' && ID_PATTERN.test(item.id))) &&
+    shortStrings(item.detected, 10) && shortStrings(item.evidence, 10) && shortStrings(item.reasons, 10);
+}
+function validProjectSupport(value) {
+  return value === undefined || (object(value) && validSupportItem(value.framework) && validSupportItem(value.packageManager) &&
+    typeof value.nonDetectionReliable === 'boolean');
+}
 
 export function validateRecommendationReport(report) {
   if (!object(report) || report.schemaVersion !== 1 || report.tool !== 'security-check-recommendations' ||
@@ -61,7 +76,8 @@ export function validateRecommendationReport(report) {
       report.boundaries.checksExecutedByThisTool !== 0 ||
       report.boundaries.checkResultsDetermined !== false ||
       report.boundaries.riskAcceptanceDetermined !== false ||
-      report.boundaries.legalComplianceDetermined !== false) invalid();
+      report.boundaries.legalComplianceDetermined !== false ||
+      !validProjectSupport(report.projectSupport)) invalid();
 
   const counts = { recommended: 0, needsHumanReview: 0, notCurrentlyIndicated: 0 };
   const ids = new Set();
@@ -81,7 +97,10 @@ export function validateRecommendationReport(report) {
         !Array.isArray(check.evidenceRequired) || check.evidenceRequired.length === 0 ||
         !check.evidenceRequired.every(value => typeof value === 'string' && value.length > 0) ||
         !Array.isArray(check.provenance) || check.provenance.length === 0 ||
-        !check.provenance.every(safeProvenance)) invalid();
+        !check.provenance.every(safeProvenance) ||
+        (check.supportNotes !== undefined && !shortStrings(check.supportNotes, 3)) ||
+        (check.projectEvidence !== undefined && (!Array.isArray(check.projectEvidence) || check.projectEvidence.length > MAX_EVIDENCE ||
+          !check.projectEvidence.every(item => object(item) && safeProvenance(item.path) && EVIDENCE_STATUSES.has(item.status))))) invalid();
     ids.add(check.id);
     counts[check.disposition === 'recommended' ? 'recommended' :
       check.disposition === 'needs_human_review' ? 'needsHumanReview' : 'notCurrentlyIndicated']++;
@@ -130,6 +149,19 @@ export function formatRecommendationSummary(report) {
   if (!report.scan.complete) {
     lines.push(`Coverage limits: ${report.scan.incompleteReasons.map(code).join(', ') || 'unknown'}.`, '');
   }
+  const support = report.projectSupport;
+  const describe = item => `${item.id ? code(item.id) : 'not identified'} (**${item.status}**)` +
+    `${item.reasons.length ? `; reasons: ${item.reasons.map(code).join(', ')}` : ''}`;
+  if (support) {
+    lines.push(`Framework: ${describe(support.framework)}. Package manager: ${describe(support.packageManager)}.`);
+    if (!support.nonDetectionReliable || support.packageManager.status !== 'supported') {
+      lines.push('**Limited support.** Unsupported, partial, or unknown project types are not shown to be secure; ' +
+        'source non-detection is not evidence of absence, and conditional checks need human review.');
+    }
+    lines.push('');
+  } else {
+    lines.push('Framework and package manager support: not assessed (older report).', '');
+  }
   const groups = [
     ['recommended', 'Recommended checks'],
     ['needs_human_review', 'Needs human review'],
@@ -141,7 +173,8 @@ export function formatRecommendationSummary(report) {
       .sort((a, b) => a.id.localeCompare(b.id, 'en'));
     if (!checks.length) lines.push('None in this group.');
     for (const check of checks) {
-      lines.push(`- ${code(check.id)} — **${disposition}**. ${evidenceFor(check)}`);
+      const notes = (check.supportNotes ?? []).map(note => ` Note: ${escaped(note)}`).join('');
+      lines.push(`- ${code(check.id)} — **${disposition}**. ${evidenceFor(check)}${notes}`);
     }
     lines.push('');
   }

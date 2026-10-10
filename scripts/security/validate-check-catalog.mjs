@@ -1,9 +1,14 @@
-import { existsSync, lstatSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, lstatSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inventoryProject } from './inventory-project.mjs';
+import { inventoryProject, SUPPORT_STATUSES } from './inventory-project.mjs';
+import { BUNDLED_CATALOG, FRAMEWORK_ROOT, PROJECT_EVIDENCE_PATH, UsageError, directoryPath, parseOptions,
+  readJsonFile, regularFile } from './security-cli.mjs';
 
 const MAX_CATALOG_BYTES = 256 * 1024;
+const MAX_EVIDENCE_FILE_BYTES = 64 * 1024;
+const MAX_EVIDENCE_PATHS = 10;
+const MAX_SUPPORT_ITEMS = 20;
 const EXECUTION_STATUSES = new Set(['automated_now', 'future_implementation', 'human_review']);
 const REVIEW_STATUSES = new Set(['detected', 'needs human verification']);
 const SIGNAL_STATUSES = new Set([...REVIEW_STATUSES, 'not detected in inspected scope']);
@@ -27,6 +32,34 @@ function safeEvidencePath(path) {
     path.split('/').every(part => part && part !== '..' && part !== '.' && !part.startsWith('.'));
 }
 
+// Project-local evidence may name dot-directories such as `.github`, but never environment files.
+// These paths are only checked for existence later; their contents are never read.
+export function safeProjectLocalPath(path) {
+  return typeof path === 'string' && path.length > 0 && path.length <= 240 &&
+    !/[\x00-\x1f\x7f\\]/.test(path) && !path.startsWith('/') &&
+    path.split('/').every(part => part && part !== '..' && part !== '.' && !/^\.env/i.test(part));
+}
+
+// Optional `support` block (Phase 4A). Absent means support was not assessed and is treated as unknown.
+function validateSupport(support) {
+  const supportItem = (item, kind) => object(item) && SUPPORT_STATUSES.includes(item.status) &&
+    (item.status !== 'partial' || kind === 'framework') &&
+    (item.id === null || (typeof item.id === 'string' && ID_PATTERN.test(item.id) && item.id.length <= 80)) &&
+    (item.status === 'unknown' || item.id !== null) &&
+    stringList(item.detected, true) && item.detected.length <= MAX_SUPPORT_ITEMS && item.detected.every(id => ID_PATTERN.test(id)) &&
+    stringList(item.evidence, true) && item.evidence.length <= MAX_SUPPORT_ITEMS && item.evidence.every(safeEvidencePath) &&
+    stringList(item.reasons, true) && item.reasons.length <= MAX_SUPPORT_ITEMS && item.reasons.every(code => ID_PATTERN.test(code)) &&
+    (item.status === 'supported') === (item.reasons.length === 0);
+  if (!object(support) || !object(support.supportedTargets) ||
+      !stringList(support.supportedTargets.frameworks) || !stringList(support.supportedTargets.packageManagers) ||
+      !supportItem(support.framework, 'framework') || !supportItem(support.packageManager, 'packageManager') ||
+      (support.framework.confidence !== undefined && !CONFIDENCES.has(support.framework.confidence)) ||
+      (support.framework.status === 'supported' && !support.supportedTargets.frameworks.includes(support.framework.id)) ||
+      (support.packageManager.status === 'supported' && !support.supportedTargets.packageManagers.includes(support.packageManager.id))) {
+    fail('invalid inventory support block');
+  }
+}
+
 export function validateInventoryReport(inventory) {
   if (!object(inventory) || inventory.schemaVersion !== 1 ||
       inventory.tool !== 'project-security-inventory' || !object(inventory.scope) ||
@@ -40,6 +73,7 @@ export function validateInventoryReport(inventory) {
       inventory.boundaries.riskLevel !== 'not assigned') {
     fail('invalid inventory schema or scope');
   }
+  if (inventory.support !== undefined) validateSupport(inventory.support);
   const seenSignals = new Set();
   for (const signal of inventory.signals) {
     if (!object(signal) || !SIGNAL_IDS.has(signal.id) || seenSignals.has(signal.id) ||
@@ -65,7 +99,9 @@ export function validateInventoryReport(inventory) {
   return { signalCount: seenSignals.size, candidateCount: seenChecks.size };
 }
 
-export function validateCheckCatalog(catalog, inventory, repositoryRoot) {
+// `referenceRoot` resolves the catalog's reusable `provenance` (method documents and scripts shipped with the
+// catalog). It is not the scanned project: project-local evidence lives in a separate file in that project.
+export function validateCheckCatalog(catalog, inventory, referenceRoot) {
   if (!object(catalog) || catalog.schemaVersion !== 1 || catalog.inventorySchemaVersion !== 1 ||
       !nonempty(catalog.catalogId) || !Array.isArray(catalog.checks) || !catalog.checks.length) {
     fail('unsupported or missing top-level schema');
@@ -87,9 +123,12 @@ export function validateCheckCatalog(catalog, inventory, repositoryRoot) {
     if (!stringList(check.evidenceRequired) || !stringList(check.provenance)) fail(`${check.id}: evidence or provenance missing`);
     for (const path of check.provenance) {
       if (path.startsWith('/') || path.split('/').some(part => part === '..' || part === '.' || part === '') ||
-          !existsSync(join(repositoryRoot, path)) || !lstatSync(join(repositoryRoot, path)).isFile()) {
+          !existsSync(join(referenceRoot, path)) || !lstatSync(join(referenceRoot, path)).isFile()) {
         fail(`${check.id}: invalid provenance path`);
       }
+    }
+    if (check.requiresSupportedPackageManager !== undefined && typeof check.requiresSupportedPackageManager !== 'boolean') {
+      fail(`${check.id}: requiresSupportedPackageManager must be a boolean`);
     }
     const match = check.match;
     if (!object(match) || !stringList(match.signals, true) || !stringList(match.statuses, true)) fail(`${check.id}: invalid match fields`);
@@ -115,17 +154,50 @@ export function validateCheckCatalog(catalog, inventory, repositoryRoot) {
   return { checkCount: catalog.checks.length, signalCount: knownSignals.size };
 }
 
+// Project-local evidence: which files in *this* project document or implement each check.
+export function validateProjectEvidence(evidence, catalog) {
+  if (!object(evidence) || evidence.schemaVersion !== 1 || evidence.kind !== 'project-local-security-evidence' ||
+      !nonempty(evidence.catalogId) || !object(evidence.checks)) fail('invalid project-local evidence schema');
+  if (evidence.catalogId !== catalog.catalogId) fail('project-local evidence names a different catalog');
+  const known = new Set(catalog.checks.map(check => check.id));
+  const entries = Object.entries(evidence.checks);
+  if (entries.length > known.size) fail('project-local evidence lists too many checks');
+  for (const [id, paths] of entries) {
+    if (!known.has(id)) fail(`project-local evidence names unknown check ${String(id).slice(0, 80)}`);
+    if (!stringList(paths) || paths.length > MAX_EVIDENCE_PATHS || !paths.every(safeProjectLocalPath)) {
+      fail(`${id}: invalid project-local evidence paths`);
+    }
+  }
+  return { checkCount: entries.length };
+}
+
+// Resolves CLI options shared by the catalog validator and the recommendation command.
+export function loadSecurityInputs(args) {
+  const options = parseOptions(args, { values: ['root', 'catalog', 'reference-root', 'project-evidence'],
+    flags: ['no-project-evidence'] });
+  if (options['project-evidence'] && options['no-project-evidence']) throw new UsageError('Choose either --project-evidence or --no-project-evidence');
+  const projectRoot = directoryPath(options.root ?? process.cwd(), 'Project root');
+  const referenceRoot = directoryPath(options['reference-root'] ?? FRAMEWORK_ROOT, 'Reference root');
+  const catalogPath = resolve(options.catalog ?? join(FRAMEWORK_ROOT, BUNDLED_CATALOG));
+  const catalog = readJsonFile(catalogPath, MAX_CATALOG_BYTES, 'Catalog');
+  let evidencePath = null;
+  if (options['project-evidence']) evidencePath = resolve(options['project-evidence']);
+  else if (!options['no-project-evidence'] && regularFile(join(projectRoot, PROJECT_EVIDENCE_PATH))) {
+    evidencePath = join(projectRoot, PROJECT_EVIDENCE_PATH);
+  }
+  const projectEvidence = evidencePath ? readJsonFile(evidencePath, MAX_EVIDENCE_FILE_BYTES, 'Project-local evidence') : null;
+  return { projectRoot, referenceRoot, catalogPath, catalog, evidencePath, projectEvidence };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    if (process.argv.length !== 2) fail('no command-line arguments expected');
-    const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-    const path = join(root, 'docs/security/SECURITY-CHECK-CATALOG.json');
-    if (statSync(path).size > MAX_CATALOG_BYTES) fail('catalog exceeds size limit');
-    const catalog = JSON.parse(readFileSync(path, 'utf8'));
-    const result = validateCheckCatalog(catalog, inventoryProject(root), root);
-    process.stdout.write(`Security check catalog valid: ${result.checkCount} checks; ${result.signalCount} inventory signals.\n`);
+    const inputs = loadSecurityInputs(process.argv.slice(2));
+    const result = validateCheckCatalog(inputs.catalog, inventoryProject(inputs.projectRoot), inputs.referenceRoot);
+    const evidence = inputs.projectEvidence ? validateProjectEvidence(inputs.projectEvidence, inputs.catalog) : null;
+    process.stdout.write(`Security check catalog valid: ${result.checkCount} checks; ${result.signalCount} inventory signals.` +
+      `${evidence ? ` Project-local evidence valid: ${evidence.checkCount} checks.` : ''}\n`);
   } catch (error) {
-    process.stderr.write(`${error instanceof SyntaxError ? 'Invalid security check catalog JSON.' : error.message}\n`);
+    process.stderr.write(`${error instanceof UsageError || /^Invalid security check catalog/.test(error.message) ? error.message : 'Security check catalog could not be validated.'}\n`);
     process.exitCode = 1;
   }
 }

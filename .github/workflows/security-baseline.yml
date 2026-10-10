@@ -54,7 +54,7 @@ jobs:
       - name: Test catalog, recommendations, and summary formatting
         run: |
           set -euo pipefail
-          node --test scripts/security/validate-check-catalog.test.mjs scripts/security/recommend-security-checks.test.mjs scripts/security/recommend-security-checks.scenarios.test.mjs scripts/security/format-security-recommendations.test.mjs
+          node --test scripts/security/validate-check-catalog.test.mjs scripts/security/recommend-security-checks.test.mjs scripts/security/recommend-security-checks.scenarios.test.mjs scripts/security/format-security-recommendations.test.mjs scripts/security/portability.test.mjs
           node scripts/security/validate-check-catalog.mjs
       - name: Publish review-only security check recommendations
         shell: bash
