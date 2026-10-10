@@ -8,6 +8,35 @@ permissions:
   contents: read
 
 jobs:
+  project-inventory:
+    name: Project inventory (review only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Test inventory and summary formatting
+        run: node --test scripts/security/inventory-project.test.mjs scripts/security/format-project-inventory.test.mjs
+      - name: Publish review-only inventory summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node scripts/security/inventory-project.mjs > "$RUNNER_TEMP/project-inventory.json"; then
+            echo 'Project inventory generation failed; review the job log.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! node scripts/security/format-project-inventory.mjs "$RUNNER_TEMP/project-inventory.json" >> "$GITHUB_STEP_SUMMARY"; then
+            echo 'Project inventory summary failed; review the job log.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
