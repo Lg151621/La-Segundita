@@ -7,6 +7,8 @@ const baseline = JSON.parse(readFileSync(new URL('../../docs/security/DEPENDENCY
 const lock = JSON.parse(readFileSync(new URL('../../package-lock.json', import.meta.url)));
 const approved = structuredClone(baseline);
 approved.approval = { status: 'approved', reviewer: 'Test reviewer', approvedOn: '2026-10-09', expiresOn: '2026-11-09' };
+const pending = structuredClone(baseline);
+pending.approval = { status: 'pending', reviewer: null, approvedOn: null, expiresOn: null };
 const today = new Date('2026-10-09T12:00:00Z');
 
 function audit() {
@@ -29,7 +31,7 @@ test('exact approved findings pass', () => {
 });
 
 test('pending approval fails even for exact findings', () => {
-  const result = evaluateAudit(audit(), baseline, lock, today);
+  const result = evaluateAudit(audit(), pending, lock, today);
   assert.equal(result.pass, false);
   assert.equal(result.approvalPending, true);
 });
@@ -96,7 +98,7 @@ test('all findings resolved pass without acceptance', () => {
   const report = audit();
   report.vulnerabilities = {};
   report.metadata.vulnerabilities.total = 0;
-  const result = evaluateAudit(report, baseline, lock, today);
+  const result = evaluateAudit(report, pending, lock, today);
   assert.equal(result.pass, true);
   assert.equal(result.resolved.length, 3);
 });
@@ -111,4 +113,15 @@ test('expired approval fails', () => {
   const result = evaluateAudit(audit(), approved, lock, new Date('2026-11-10T12:00:00Z'));
   assert.equal(result.pass, false);
   assert.equal(result.approvalPending, true);
+});
+
+test('approval remains valid on its inclusive expiry date', () => {
+  const result = evaluateAudit(audit(), approved, lock, new Date('2026-11-09T23:59:59Z'));
+  assert.equal(result.pass, true);
+});
+
+test('missing approval fails closed', () => {
+  const missing = structuredClone(approved);
+  delete missing.approval;
+  assert.throws(() => evaluateAudit(audit(), missing, lock, today), /Invalid baseline approval status/);
 });

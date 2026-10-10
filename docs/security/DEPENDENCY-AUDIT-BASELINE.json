@@ -4,10 +4,10 @@
   "reviewBy": "2026-11-09",
   "reviewTriggers": ["patched upstream release", "changed dependency path or version", "new reachable input", "reported exploit", "architecture change"],
   "approval": {
-    "status": "pending",
-    "reviewer": null,
-    "approvedOn": null,
-    "expiresOn": null
+    "status": "approved",
+    "reviewer": "Project owner, VitaNova Creations",
+    "approvedOn": "2026-10-09",
+    "expiresOn": "2026-11-09"
   },
   "findings": [
     {
