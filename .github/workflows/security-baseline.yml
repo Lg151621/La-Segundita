@@ -1,0 +1,88 @@
+name: Security baseline
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Clean install
+        run: npm ci --no-audit --no-fund
+      - name: Check audit parser cases
+        run: node --test scripts/security/check-dependency-audit.test.mjs
+      - name: Collect npm audit JSON
+        shell: bash
+        run: |
+          set +e
+          npm audit --json > "$RUNNER_TEMP/npm-audit.json"
+          status=$?
+          set -e
+          if [ ! -s "$RUNNER_TEMP/npm-audit.json" ]; then
+            echo "npm audit returned no JSON (exit $status)." >&2
+            exit 1
+          fi
+          if [ "$status" -gt 1 ]; then
+            echo 'npm audit could not complete.' >&2
+            exit "$status"
+          fi
+      - name: Compare exact advisory baseline
+        run: node scripts/security/check-dependency-audit.mjs "$RUNNER_TEMP/npm-audit.json" docs/security/DEPENDENCY-AUDIT-BASELINE.json package-lock.json
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code and PR history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify PR scan range
+        if: github.event_name == 'pull_request'
+        id: pr_range
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null || { echo 'PR base commit is unavailable.' >&2; exit 1; }
+          git cat-file -e "${HEAD_SHA}^{commit}" 2>/dev/null || { echo 'PR head commit is unavailable.' >&2; exit 1; }
+          base=$(git merge-base "$BASE_SHA" "$HEAD_SHA") || { echo 'PR base and head have no common ancestor.' >&2; exit 1; }
+          count=$(git rev-list --count "$base..$HEAD_SHA")
+          if [ "$count" -lt 1 ]; then
+            echo 'PR secret scan range contains no commits.' >&2
+            exit 1
+          fi
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+          echo "head=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+          echo "PR secret scan range: $count commit(s) after the merge base." >> "$GITHUB_STEP_SUMMARY"
+      - name: Scan PR commits or selected history for secrets
+        id: scan
+        uses: trufflesecurity/trufflehog@f714bf454f350590f4a24c3ddb1aef02c35bf5b6 # v3.97.5
+        with:
+          base: ${{ steps.pr_range.outputs.base }}
+          head: ${{ steps.pr_range.outputs.head }}
+          version: '3.97.5'
+          extra_args: --no-verification --results=unverified --fail-on-scan-errors --log-level=-1
+      - name: Summarize secret scan
+        if: always()
+        run: |
+          echo 'Secret scan outcome: ${{ steps.scan.outcome }}. Review any finding in the job log; do not copy credential values.' >> "$GITHUB_STEP_SUMMARY"

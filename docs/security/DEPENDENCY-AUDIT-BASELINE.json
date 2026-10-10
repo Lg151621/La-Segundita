@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-10-09",
+  "reviewBy": "2026-11-09",
+  "reviewTriggers": ["patched upstream release", "changed dependency path or version", "new reachable input", "reported exploit", "architecture change"],
+  "approval": {
+    "status": "approved",
+    "reviewer": "Project owner, VitaNova Creations",
+    "approvedOn": "2026-10-09",
+    "expiresOn": "2026-11-09"
+  },
+  "findings": [
+    {
+      "id": "GHSA-vfj7-8cjw-p6xm",
+      "package": "braces",
+      "severity": "high",
+      "direct": false,
+      "consumers": ["chokidar", "micromatch"],
+      "rationale": "Sanity codegen/watch path; no visitor-controlled glob pattern identified and no patched release available.",
+      "instances": [{ "path": "node_modules/braces", "version": "3.0.3", "dev": false, "optional": false }]
+    },
+    {
+      "id": "GHSA-hp3w-g68c-fv3c",
+      "package": "sprintf-js",
+      "severity": "moderate",
+      "direct": false,
+      "consumers": ["argparse"],
+      "rationale": "Argparse CLI formatting path; no visitor-controlled format string identified and no patched release available.",
+      "instances": [{ "path": "node_modules/sprintf-js", "version": "1.0.3", "dev": false, "optional": false }]
+    },
+    {
+      "id": "GHSA-w5hq-g745-h8pq",
+      "package": "uuid",
+      "severity": "moderate",
+      "direct": false,
+      "consumers": ["typeid-js"],
+      "rationale": "typeid-js uses uuid v7 and stringify, while this advisory covers v3, v5, and v6 buffer handling; a patched major override is not yet validated.",
+      "instances": [{ "path": "node_modules/typeid-js/node_modules/uuid", "version": "10.0.0", "dev": false, "optional": false }]
+    }
+  ]
+}

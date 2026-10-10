@@ -6,9 +6,11 @@
 
 **Owner for decisions:** VitaNova Creations / project owner
 
-**Scope:** Phase 2C.3 recorded the checked-in lockfile at `2160c9e`. Phase 2C.5 records the current, uncommitted local dependency patch. No production change is verified.
+**Scope:** Phase 2C.3 recorded the checked-in lockfile at `2160c9e`. Phase 2C.5 patched the lockfile at `c10d1d4`. Phase 3A added the automated audit baseline; Phase 3C records the owner's temporary acceptance. No production change is verified by this register.
 
-**Decision state:** Five `js-yaml` advisories are **resolved** in the tested local lockfile by the `3.15.2` override. Three advisories remain **open**; none is formally accepted. Revisit open risks by **2026-11-09**, and sooner on the triggers below.
+**Decision state:** Five `js-yaml` advisories are **resolved** in the tested local lockfile by the `3.15.2` override. The three remaining advisories are **accepted temporarily**, still unfixed, through **2026-11-09** by the project owner, VitaNova Creations, on **2026-10-09**. Revisit them by that date and sooner on the triggers below. Acceptance is limited to the exact advisory IDs, installed versions/paths, severity, consumers, and scope in `DEPENDENCY-AUDIT-BASELINE.json`; it is not a patch or a production deployment approval.
+
+**Phase 3C owner decision:** A fresh 2026-10-09 audit again found 17 flagged package entries from these same three source IDs and no new or changed source finding. The owner explicitly approved the exact baseline in this conversation on 2026-10-09, through 2026-11-09. The CI audit job passes only while this approval is valid and the findings remain exact matches; new or worsened findings fail independently. The comparator uses UTC calendar dates and treats 2026-11-09 as inclusive: the approval fails starting 2026-11-10 UTC unless the owner records a new decision.
 
 ## Baseline and interpretation
 
@@ -20,20 +22,20 @@ The prior `smol-toml` override remains present: `@vercel/frameworks` resolves `s
 
 This is a public bilingual marketing site with an embedded Sanity Studio, a tokenless read-only Sanity content fetch, and one signed Sanity revalidation webhook. It has no checkout, public accounts, or visitor-submitted YAML/glob/format-string input. The affected dependency paths are under `sanity → @sanity/cli`; although installed through a production dependency, they appear oriented to CLI, code generation, and framework configuration work. `@vercel/frameworks/dist/read-config-file.js` calls `js-yaml.safeLoad` on local YAML configuration in its Hugo and Jekyll helpers; this Next.js repository has no tracked YAML configuration. `typeid-js/dist/index.mjs` imports `uuid` `v7` and `stringify`, whereas its advisory concerns `v3`/`v5`/`v6` with output buffers. A prior bundle string scan found no `js-yaml`, `sprintf-js`, or `typeid-js` package names; this does **not prove** absence from every served bundle or build/install/CLI path. Phase 2C.5 did perform an isolated clean install, build, CLI checks, parser smoke tests, and local GET route checks. No live exploit test, complete call graph, authenticated publishing test, or production inspection was performed.
 
-**Shared containment while open:** Keep development and build inputs trusted; do not run Sanity CLI commands or builds on unreviewed repositories/configuration files; retain the signed webhook and restrict who can edit deployment configuration. Re-audit before any dependency change. These measures reduce plausible exposure but are not patches.
+**Shared containment during temporary acceptance:** Keep development and build inputs trusted; do not run Sanity CLI commands or builds on unreviewed repositories/configuration files; retain the signed webhook and restrict who can edit deployment configuration. Re-audit before any dependency change. These measures reduce plausible exposure but are not patches.
 
 ### Advisory index
 
 | Advisory ID | Source package installed | Advisory severity | Project priority | Status |
 | --- | --- | --- | --- | --- |
-| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `braces@3.0.3` | High | Low | open |
+| [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) | `braces@3.0.3` | High | Low | accepted-temporarily |
 | [GHSA-mh29-5h37-fv8m](https://github.com/advisories/GHSA-mh29-5h37-fv8m) | `js-yaml@3.15.2` | Moderate | Medium | resolved |
 | [GHSA-h67p-54hq-rp68](https://github.com/advisories/GHSA-h67p-54hq-rp68) | `js-yaml@3.15.2` | Moderate | Medium | resolved |
 | [GHSA-52cp-r559-cp3m](https://github.com/advisories/GHSA-52cp-r559-cp3m) | `js-yaml@3.15.2` | High | Medium | resolved |
 | [GHSA-5p4m-2wfm-xmqj](https://github.com/advisories/GHSA-5p4m-2wfm-xmqj) | `js-yaml@3.15.2` | High | Medium | resolved |
 | [GHSA-2883-xcg3-v3hh](https://github.com/advisories/GHSA-2883-xcg3-v3hh) | `js-yaml@3.15.2` | High | Medium | resolved |
-| [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | `sprintf-js@1.0.3` | Moderate | Low | open |
-| [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) | `uuid@10.0.0` | Moderate | Low | open |
+| [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | `sprintf-js@1.0.3` | Moderate | Low | accepted-temporarily |
+| [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) | `uuid@10.0.0` | Moderate | Low | accepted-temporarily |
 
 All paths below start at the root project's direct `sanity@6.18.0` dependency unless stated otherwise. The five `js-yaml` records share one installed package and path; they remain separate records because they are separate advisories.
 
@@ -41,12 +43,12 @@ All paths below start at the root project's direct `sanity@6.18.0` dependency un
 
 ### GHSA-vfj7-8cjw-p6xm — `braces` recursion exhaustion
 
-- **Affected/installed:** `<=3.0.3`; installed `3.0.3`. **Advisory severity:** High. **Project priority:** Low. **Status:** open. **Confidence:** Medium.
+- **Affected/installed:** `<=3.0.3`; installed `3.0.3`. **Advisory severity:** High. **Project priority:** Low. **Status:** accepted-temporarily through 2026-11-09. **Confidence:** Medium.
 - **Exact transitive paths:** `sanity@6.18.0 → @sanity/cli@8.14.0 → @sanity/codegen@8.2.0 → chokidar@3.6.0 → braces@3.0.3`; and `@sanity/codegen → globby@11.1.0 → fast-glob@3.3.3 → micromatch@4.0.8 → braces@3.0.3`.
 - **Impact and preconditions:** A deeply nested, attacker-controlled brace pattern can exhaust the Node.js stack and stop a process. The site does not accept visitor-supplied glob patterns. Exposure would require an affected codegen/watch/tooling path to process such a pattern from untrusted input; that call path has not been demonstrated here.
 - **Fix/containment:** The advisory lists no patched `braces` version. Avoid untrusted glob patterns in local/CI tooling; watch for upstream Sanity/codegen or `braces` fixes. npm's proposed Sanity major downgrade is not a validated remedy for this application.
 - **Phase 2C.5 outcome:** Deferred. npm still lists `3.0.3` as the latest release and the advisory lists no patched version. No compatible fix was available to test. Exposure remains a tooling/glob-pattern scenario with medium confidence; inspect again when an upstream release or input path changes.
-- **Owner review proposal:** Consider temporary acceptance of this low-context-priority CLI risk until an upstream compatible fix exists. Re-review if a patched release appears, codegen/watch workflows change, untrusted patterns become possible, or an exploit is reported in a similar toolchain; otherwise monthly.
+- **Owner acceptance:** Project owner, VitaNova Creations; approved 2026-10-09, expires after 2026-11-09 UTC. The codegen/watch path has no identified visitor-controlled glob pattern; keep repository and tooling input trusted. Re-review if a patched release appears, codegen/watch workflows change, untrusted patterns become possible, or an exploit is reported in a similar toolchain; otherwise by expiry.
 
 ### GHSA-mh29-5h37-fv8m — `js-yaml` prototype pollution through merge keys
 
@@ -85,25 +87,25 @@ All paths below start at the root project's direct `sanity@6.18.0` dependency un
 
 ### GHSA-hp3w-g68c-fv3c — `sprintf-js` precision-triggered exception
 
-- **Affected/installed:** `<=1.1.3`; installed `1.0.3`. **Advisory severity:** Moderate. **Project priority:** Low. **Status:** open. **Confidence:** Medium.
+- **Affected/installed:** `<=1.1.3`; installed `1.0.3`. **Advisory severity:** Moderate. **Project priority:** Low. **Status:** accepted-temporarily through 2026-11-09. **Confidence:** Medium.
 - **Exact transitive path:** `sanity@6.18.0 → @sanity/cli@8.14.0 → @vercel/frameworks@3.29.0 → js-yaml@3.15.2 → argparse@1.0.10 → sprintf-js@1.0.3`.
 - **Impact and preconditions:** An attacker-controlled format string with excessive precision can cause an uncaught `RangeError` and abort the calling operation. `argparse` uses `sprintf` to format CLI help and errors; no visitor-controlled format string or public request path was identified. Whether its CLI format inputs can be influenced by an untrusted configuration needs deeper call-path analysis.
 - **Fix/containment:** The advisory lists no patched `sprintf-js` release. Keep CLI/configuration input trusted; monitor `argparse`, `js-yaml`, and framework updates. npm's proposed Sanity downgrade is not validated.
 - **Phase 2C.5 outcome:** Deferred. npm still lists `1.1.3` as latest and the advisory lists no patched release; `argparse` still resolves `1.0.3`. No compatible fix was available to test. Re-review on a patched release, upstream replacement, or newly reachable format-string input.
-- **Owner review proposal:** Consider temporary acceptance at low contextual priority. Re-review if CLI format strings become untrusted, a patch or upstream replacement appears, exploit reports emerge, or monthly.
+- **Owner acceptance:** Project owner, VitaNova Creations; approved 2026-10-09, expires after 2026-11-09 UTC. No visitor-controlled format string or public request path was identified; keep CLI and configuration input trusted. Re-review if CLI format strings become untrusted, a patch or upstream replacement appears, or exploit reports emerge; otherwise by expiry. The uninspected CLI call paths remain an uncertainty.
 
 ### GHSA-w5hq-g745-h8pq — `uuid` output-buffer bounds
 
-- **Affected/installed:** `<11.1.1`; installed vulnerable copy `10.0.0`. Other installed copies (`11.1.1`, `14.0.2`) are outside this advisory's affected ranges. **Advisory severity:** Moderate. **Project priority:** Low. **Status:** open. **Confidence:** Medium-high for the observed `typeid-js` imports; lower for any uninspected dynamic use.
+- **Affected/installed:** `<11.1.1`; installed vulnerable copy `10.0.0`. Other installed copies (`11.1.1`, `14.0.2`) are outside this advisory's affected ranges. **Advisory severity:** Moderate. **Project priority:** Low. **Status:** accepted-temporarily through 2026-11-09. **Confidence:** Medium-high for the observed `typeid-js` imports; lower for any uninspected dynamic use.
 - **Exact transitive path:** `sanity@6.18.0 → @sanity/cli@8.14.0 → typeid-js@1.2.0 → uuid@10.0.0`.
 - **Impact and preconditions:** `uuid` `v3()`, `v5()`, or `v6()` with an undersized caller-supplied output buffer or oversized offset can silently write only part of the UUID. `typeid-js` imports `v7` and `stringify`, not these affected methods in the inspected distribution. A harmful path would require another use of the vulnerable APIs with a caller-controlled buffer; none was found in this dependency path.
 - **Fix/containment:** Patched in `uuid@11.1.1` (11.x), but `typeid-js@1.2.0` requests `^10.0.0`; forcing 11.x crosses its declared major range and needs testing or an upstream update. Avoid relying on the npm-suggested Sanity major downgrade.
 - **Phase 2C.5 outcome:** Deferred. `typeid-js@1.2.0` is its latest release and still declares `uuid@^10.0.0`. UUID 11 changes `v7` behavior, which `typeid-js` uses, so a major override was not included in this low-risk batch. Re-review after upstream support or a separately approved compatibility exercise.
-- **Owner review proposal:** Consider temporary acceptance at low contextual priority. Re-review if `typeid-js` or CLI begins using `v3`/`v5`/`v6`, an upstream compatible fix appears, architecture changes, exploit reports emerge, or monthly.
+- **Owner acceptance:** Project owner, VitaNova Creations; approved 2026-10-09, expires after 2026-11-09 UTC. The inspected `typeid-js` distribution imports `v7` and `stringify`, outside the affected `v3`/`v5`/`v6` buffer use; avoid an unvalidated major override. Re-review if `typeid-js` or CLI begins using those affected APIs, an upstream compatible fix appears, architecture changes, or exploit reports emerge; otherwise by expiry. Uninspected dynamic use remains an uncertainty.
 
 ## Owner decision and follow-up
 
-Review the five locally resolved `js-yaml` records and the clean-install verification before deciding whether to deploy this patch. The `braces`, `sprintf-js`, and `uuid` records remain open until the owner accepts a time-bounded risk or a compatible fix is validated. No accepted-risk decision, production deployment, authenticated publishing result, or legal compliance claim is implied here. If acceptance is granted later, record the approver, decision date, expiry/revisit date, rationale, and compensating controls in each record before changing its status to `accepted-temporarily`.
+The owner accepted the exact `braces`, `sprintf-js`, and `uuid` findings temporarily on 2026-10-09 through 2026-11-09 UTC. They remain known vulnerabilities; acceptance does not establish a fix, risk-free state, production deployment, authenticated publishing result, or legal compliance claim. On a new or changed advisory, changed exposure, or expiry, treat the affected acceptance as no longer valid and require a new owner decision after review. Review the five locally resolved `js-yaml` records and clean-install verification before any separate deployment decision.
 
 If deployment is authorized in a later phase, verify the deployed build and an authenticated Studio publish and signed webhook round trip in the proper environment. Review upstream `braces` and `sprintf-js` releases for patches, and seek `typeid-js` support for a patched `uuid` major before considering that override. These are follow-up recommendations, not actions performed in Phase 2C.5.
 
