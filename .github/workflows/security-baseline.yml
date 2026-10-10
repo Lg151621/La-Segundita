@@ -37,6 +37,38 @@ jobs:
             exit 1
           fi
 
+  security-recommendations:
+    name: Security recommendations (review only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Test catalog, recommendations, and summary formatting
+        run: |
+          set -euo pipefail
+          node --test scripts/security/validate-check-catalog.test.mjs scripts/security/recommend-security-checks.test.mjs scripts/security/recommend-security-checks.scenarios.test.mjs scripts/security/format-security-recommendations.test.mjs
+          node scripts/security/validate-check-catalog.mjs
+      - name: Publish review-only security check recommendations
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! node scripts/security/recommend-security-checks.mjs > "$RUNNER_TEMP/security-recommendations.json"; then
+            echo 'Security recommendation generation failed; review the job log.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if ! node scripts/security/format-security-recommendations.mjs "$RUNNER_TEMP/security-recommendations.json" >> "$GITHUB_STEP_SUMMARY"; then
+            echo 'Security recommendation summary failed; review the job log.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
   dependency-audit:
     name: Dependency audit
     runs-on: ubuntu-latest
