@@ -1,10 +1,10 @@
-import { lstatSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { lstatSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inventoryProject } from './inventory-project.mjs';
-import { validateCheckCatalog } from './validate-check-catalog.mjs';
+import { loadSecurityInputs, validateCheckCatalog, validateProjectEvidence } from './validate-check-catalog.mjs';
+import { BUNDLED_CATALOG, PROJECT_EVIDENCE_PATH, UsageError, sourceLabel } from './security-cli.mjs';
 
-const MAX_CATALOG_BYTES = 256 * 1024;
 const MAX_REPORT_BYTES = 64 * 1024;
 const MAX_CHECKS = 64;
 const MAX_EVIDENCE = 5;
@@ -16,9 +16,40 @@ function text(value) {
 }
 function bounded(values, limit = 5) { return values.slice(0, limit).map(text); }
 
-export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
-  validateCheckCatalog(catalog, inventory, repositoryRoot);
+// Inventories produced before Phase 4A carry no support block; treat both dimensions as unknown.
+const UNASSESSED = { status: 'unknown', id: null, detected: [], evidence: [], reasons: ['support_not_assessed'] };
+function supportOf(inventory) {
+  const support = inventory.support;
+  const item = value => ({ status: value.status, id: value.id, detected: bounded(value.detected, 10),
+    evidence: bounded(value.evidence, 10), reasons: bounded(value.reasons, 10) });
+  return {
+    framework: item(support?.framework ?? UNASSESSED),
+    packageManager: item(support?.packageManager ?? UNASSESSED),
+    supportedTargets: support?.supportedTargets
+      ? { frameworks: bounded(support.supportedTargets.frameworks, 10), packageManagers: bounded(support.supportedTargets.packageManagers, 10) }
+      : { frameworks: [], packageManagers: [] },
+  };
+}
+
+// Existence only: a project-local evidence file is never opened, and symlinks are not followed.
+function evidenceStatus(projectRoot, path) {
+  if (!projectRoot) return 'not_checked';
+  try {
+    const stat = lstatSync(join(projectRoot, path), { throwIfNoEntry: false });
+    return !stat ? 'missing' : stat.isFile() ? 'present' : 'not_regular_file';
+  } catch { return 'not_checked'; }
+}
+
+// `referenceRoot` resolves the catalog's reusable provenance. `options.projectRoot` and
+// `options.projectEvidence` add project-local evidence presence; both are optional.
+export function recommendSecurityChecks(inventory, catalog, referenceRoot, options = {}) {
+  validateCheckCatalog(catalog, inventory, referenceRoot);
   if (catalog.checks.length > MAX_CHECKS) throw new Error('Catalog exceeds recommendation limit');
+  const projectEvidence = options.projectEvidence ?? null;
+  if (projectEvidence) validateProjectEvidence(projectEvidence, catalog);
+  const support = supportOf(inventory);
+  const frameworkLimited = support.framework.status !== 'supported';
+  const packageManagerLimited = support.packageManager.status !== 'supported';
 
   const bySignal = new Map(inventory.signals.map(signal => [signal.id, signal]));
   const incompleteReasons = bounded(inventory.scope.incomplete, 20);
@@ -26,6 +57,7 @@ export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
   if (['invalid', 'too_large'].includes(inventory.scope.packageManifest) &&
       !incompleteReasons.includes('unusable_package_manifest')) incompleteReasons.push('unusable_package_manifest');
   const complete = incompleteReasons.length === 0;
+  const nonDetectionReliable = complete && !frameworkLimited;
 
   const recommendations = [...catalog.checks].sort((a, b) => a.id.localeCompare(b.id, 'en')).map(check => {
     const matchSignals = check.match.signals.map(id => {
@@ -52,17 +84,28 @@ export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
         (signal.status === 'not detected in inspected scope' && signal.evidence.length > 0));
       if (clearDetection) {
         disposition = 'recommended';
-        rationale = uncertain
+        rationale = uncertain || frameworkLimited
           ? 'At least one signal has concrete source evidence; other evidence or scan limits still need review.'
           : 'At least one matching signal has concrete source evidence; this is a check proposal only.';
       } else if (uncertain) {
         disposition = 'needs_human_review';
         rationale = 'Signal evidence is uncertain, contradictory, missing, or the scan is incomplete; confirm applicability.';
+      } else if (frameworkLimited) {
+        // An unsupported or unknown project layout can hide routes, forms or integrations from this scanner.
+        disposition = 'needs_human_review';
+        rationale = `Project framework support is ${support.framework.status}; source non-detection cannot rule this check out. Confirm applicability.`;
       } else {
         disposition = 'not_currently_indicated';
         rationale = 'No matching signal was detected in the inspected source; external or future use is not ruled out.';
       }
     }
+    const supportNotes = [];
+    if (check.requiresSupportedPackageManager === true && packageManagerLimited) {
+      supportNotes.push(`Package manager support is ${support.packageManager.status}` +
+        `${support.packageManager.id ? ` (${support.packageManager.id})` : ''}; the existing automation covers npm lockfiles only, ` +
+        'so its result does not cover this project. Use the package manager\'s own advisory tooling and review manually.');
+    }
+    const localPaths = projectEvidence?.checks?.[check.id] ?? [];
     return {
       id: check.id,
       name: text(check.name),
@@ -76,6 +119,9 @@ export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
       recommendedAction: text(check.recommendedAction),
       ownerApprovalRequiredForRiskDecision: check.ownerApprovalRequiredForRiskDecision,
       provenance: bounded(check.provenance),
+      supportNotes: bounded(supportNotes, 3),
+      projectEvidence: localPaths.slice(0, MAX_EVIDENCE).map(path => ({ path: text(path), status: evidenceStatus(options.projectRoot, path) })),
+      projectEvidenceOmitted: Math.max(0, localPaths.length - MAX_EVIDENCE),
     };
   });
 
@@ -91,6 +137,8 @@ export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
       ? 'Confirm applicability from missing, uncertain, conflicting, or incomplete evidence.'
       : check.disposition === 'not_currently_indicated'
         ? 'Confirm external or offline feature use before relying on this bounded non-detection.'
+        : check.executionStatus === 'automated_now' && check.supportNotes.length
+          ? 'Existing automation does not cover this project type; arrange an equivalent check and review it separately.'
         : check.executionStatus === 'automated_now'
           ? 'Review the actual check result separately; this report did not run the check.'
           : 'Confirm applicability and arrange this check; no execution result is recorded.',
@@ -100,9 +148,12 @@ export function recommendSecurityChecks(inventory, catalog, repositoryRoot) {
     tool: 'security-check-recommendations',
     inputs: { inventorySchemaVersion: inventory.schemaVersion, catalogSchemaVersion: catalog.schemaVersion,
       catalogId: text(catalog.catalogId), inventorySource: 'local project inventory',
-      catalogSource: 'docs/security/SECURITY-CHECK-CATALOG.json' },
+      catalogSource: text(options.catalogSource ?? BUNDLED_CATALOG),
+      projectEvidenceSource: text(projectEvidence ? options.projectEvidenceSource ?? 'supplied project-local evidence' : 'none') },
     scan: { complete, sourceFilesInspected: inventory.scope.sourceFilesInspected,
       packageManifest: inventory.scope.packageManifest, incompleteReasons },
+    // Additive in report schema version 1 (Phase 4A).
+    projectSupport: { ...support, nonDetectionReliable },
     summary,
     recommendations,
     humanConfirmation,
@@ -129,16 +180,20 @@ export function serializeRecommendationReport(report) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    if (process.argv.length !== 2) throw new Error('Unexpected arguments');
-    const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-    const catalogPath = join(root, 'docs/security/SECURITY-CHECK-CATALOG.json');
-    const stat = lstatSync(catalogPath);
-    if (!stat.isFile() || stat.size > MAX_CATALOG_BYTES) throw new Error('Invalid catalog file');
-    const catalog = JSON.parse(readFileSync(catalogPath, 'utf8'));
-    const report = recommendSecurityChecks(inventoryProject(root), catalog, root);
+    const inputs = loadSecurityInputs(process.argv.slice(2));
+    const report = recommendSecurityChecks(inventoryProject(inputs.projectRoot), inputs.catalog, inputs.referenceRoot, {
+      projectRoot: inputs.projectRoot,
+      projectEvidence: inputs.projectEvidence,
+      catalogSource: sourceLabel(inputs.catalogPath, BUNDLED_CATALOG),
+      projectEvidenceSource: inputs.evidencePath ? sourceLabel(inputs.evidencePath, PROJECT_EVIDENCE_PATH, inputs.projectRoot) : undefined,
+    });
     process.stdout.write(serializeRecommendationReport(report));
-  } catch {
-    process.stderr.write('Security check recommendations could not be generated from valid local inputs.\n');
+  } catch (error) {
+    // Usage and catalog-contract messages name options, check IDs and fields only, never local paths or file contents.
+    process.stderr.write(error instanceof UsageError
+      ? `${error.message}\nUsage: node scripts/security/recommend-security-checks.mjs [--root DIR] [--catalog FILE] [--reference-root DIR] [--project-evidence FILE | --no-project-evidence]\n`
+      : /^Invalid security check catalog/.test(error.message) ? `${error.message}\n`
+        : 'Security check recommendations could not be generated from valid local inputs.\n');
     process.exitCode = 1;
   }
 }

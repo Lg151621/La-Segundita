@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "kind": "project-local-security-evidence",
+  "catalogId": "vitanova-security-checks",
+  "project": "La Segundita",
+  "note": "Project-local pointers to files that document or implement each catalog check in this repository. The recommendation command only checks that these files exist; it never reads them. This is not a check result or risk decision.",
+  "checks": {
+    "dependency_scan": [
+      ".github/workflows/security-baseline.yml",
+      "docs/security/SECURITY-BASELINE-CI.md",
+      "docs/security/DEPENDENCY-RISK-REGISTER.md",
+      "docs/security/DEPENDENCY-AUDIT-BASELINE.json"
+    ],
+    "secret_scan": [
+      ".github/workflows/security-baseline.yml",
+      "docs/security/SECURITY-BASELINE-CI.md"
+    ],
+    "secure_config_headers": [
+      "next.config.ts",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "build_verification": [
+      "package.json",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "repo_host_access_review": [
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "cms_access_review": [
+      "sanity.config.ts",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "cms_content_link_review": [
+      "sanity/schemaTypes/storeSettings.ts",
+      "sanity/schemaTypes/featuredPhotos.ts",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "webhook_authentication_review": [
+      "app/api/revalidate/route.ts",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "webhook_replay_abuse_review": [
+      "app/api/revalidate/route.ts"
+    ],
+    "api_input_validation_review": [
+      "app/api/revalidate/route.ts"
+    ],
+    "analytics_privacy_review": [
+      "app/(en)/layout.tsx",
+      "app/(es)/layout.tsx",
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ],
+    "payment_flow_pci_scope_review": [
+      "docs/security/PROJECT-SECURITY-PROFILE.md"
+    ]
+  }
+}

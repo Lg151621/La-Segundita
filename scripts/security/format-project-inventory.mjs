@@ -65,6 +65,20 @@ export function formatInventorySummary(report) {
   }
   if (report.signals.length > signals.length) lines.push(`Signal list limited to ${MAX_SIGNALS} entries.`, '');
 
+  lines.push('### Project support', '');
+  const support = report.support;
+  const describe = (label, item) => {
+    if (!item || typeof item !== 'object') return `${label}: not assessed.`;
+    const reasons = array(item.reasons).filter(value => typeof value === 'string').slice(0, 5);
+    return `${label}: ${typeof item.id === 'string' ? code(item.id) : 'not identified'} (${code(typeof item.status === 'string' ? item.status : 'unknown')})` +
+      `${reasons.length ? `; reasons: ${reasons.map(code).join(', ')}` : ''}.`;
+  };
+  lines.push(describe('Framework', support?.framework), describe('Package manager', support?.packageManager));
+  if (support?.framework?.status !== 'supported' || support?.packageManager?.status !== 'supported') {
+    lines.push('Unsupported, partial, or unknown project types are not shown to be secure; non-detection here is not evidence of absence.');
+  }
+  lines.push('');
+
   const incomplete = array(report.scope?.incomplete).filter(value => typeof value === 'string');
   lines.push('### Scope and uncertainty', '');
   lines.push(`Source files inspected: ${Number.isSafeInteger(report.scope?.sourceFilesInspected) && report.scope.sourceFilesInspected >= 0 ? report.scope.sourceFilesInspected : 'unknown'}.`);

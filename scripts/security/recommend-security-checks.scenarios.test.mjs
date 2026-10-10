@@ -40,7 +40,9 @@ const scenarios = [
     name: 'minimal-public',
     detected: [],
     conditional: [],
-    expected: { recommended: 5, needsHumanReview: 0, notCurrentlyIndicated: 10, total: 15 },
+    // Phase 4A: no package.json, so the framework is unknown and source non-detection cannot rule checks out.
+    // Before 4A this fixture reported 5 / 0 / 10 (conditional checks "not currently indicated").
+    expected: { recommended: 5, needsHumanReview: 10, notCurrentlyIndicated: 0, total: 15 },
   },
 ];
 

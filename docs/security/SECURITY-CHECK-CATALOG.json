@@ -10,13 +10,14 @@
       "concern": "Known vulnerable packages or changed advisory exposure.",
       "match": { "mode": "always", "signals": [], "statuses": [] },
       "executionStatus": "automated_now",
+      "requiresSupportedPackageManager": true,
       "evidenceRequired": ["npm audit JSON", "package-lock.json", "approved baseline and review date"],
       "detectionLimits": "An advisory match does not establish reachability or exploitability; the audit covers the installed dependency tree.",
       "falsePositives": "An affected package may be unreachable from project inputs.",
       "falseNegatives": "Unpublished vulnerabilities and non-package supply-chain risks are not reported.",
       "recommendedAction": "Inspect new or changed IDs and installed paths; review remediation compatibility or seek a separate time-limited owner decision.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": [".github/workflows/security-baseline.yml", "docs/security/SECURITY-BASELINE-CI.md", "docs/security/DEPENDENCY-RISK-REGISTER.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/check-dependency-audit.mjs"]
     },
     {
       "id": "secret_scan",
@@ -31,7 +32,7 @@
       "falseNegatives": "Unknown formats and secrets outside the scanned range may be missed.",
       "recommendedAction": "Triage findings privately; revoke and rotate confirmed exposed credentials without copying values into reports.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": [".github/workflows/security-baseline.yml", "docs/security/SECURITY-BASELINE-CI.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "secure_config_headers",
@@ -46,7 +47,7 @@
       "falseNegatives": "A source declaration may hide deployment-specific omissions or path differences.",
       "recommendedAction": "Compare source policy with live responses and hosting settings; propose changes separately for owner review.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["next.config.ts", "docs/security/PROJECT-SECURITY-PROFILE.md", "docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "build_verification",
@@ -61,7 +62,7 @@
       "falseNegatives": "Compilation can pass while runtime and authorization defects remain.",
       "recommendedAction": "Run focused typecheck and build in an authorized environment, recording external-service limitations.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["package.json", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "repo_host_access_review",
@@ -76,7 +77,7 @@
       "falseNegatives": "Undocumented provider grants will not appear in source.",
       "recommendedAction": "Ask the account owner to review least privilege and offboarding evidence; do not change grants automatically.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "cms_access_review",
@@ -91,7 +92,7 @@
       "falseNegatives": "External CMS accounts or headless publishing may not match source patterns.",
       "recommendedAction": "Have the CMS administrator verify live access and document any excess grant for separate approval.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["sanity.config.ts", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/inventory-project.mjs"]
     },
     {
       "id": "cms_content_link_review",
@@ -106,7 +107,7 @@
       "falseNegatives": "Live content can change without a code change.",
       "recommendedAction": "Review representative published content and link destinations with the publisher; record remediation separately.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["sanity/schemaTypes/storeSettings.ts", "sanity/schemaTypes/featuredPhotos.ts", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "webhook_authentication_review",
@@ -121,7 +122,7 @@
       "falseNegatives": "Custom verification helpers may not match inventory patterns.",
       "recommendedAction": "Test accepted and rejected requests in a safe environment and confirm provider settings with the owner.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["app/api/revalidate/route.ts", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/inventory-project.mjs"]
     },
     {
       "id": "webhook_replay_abuse_review",
@@ -136,7 +137,7 @@
       "falseNegatives": "A safe test cannot reproduce every production traffic pattern.",
       "recommendedAction": "Review provider delivery behavior and authorized traffic evidence before proposing replay or rate controls.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["app/api/revalidate/route.ts", "docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
     },
     {
       "id": "api_input_validation_review",
@@ -151,7 +152,7 @@
       "falseNegatives": "Reverse-proxy or external API behavior is outside repository inspection.",
       "recommendedAction": "Review each route's trust boundary and test known invalid requests in a safe environment.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["app/api/revalidate/route.ts", "docs/security/PROJECT-AWARE-CHECK-MATRIX.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/inventory-project.mjs"]
     },
     {
       "id": "analytics_privacy_review",
@@ -166,7 +167,7 @@
       "falseNegatives": "Tag-manager or hosting-side telemetry may not appear in inspected source.",
       "recommendedAction": "Compare deployed requests and account settings with the owner's privacy decisions; refer legal questions to qualified review.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["app/(en)/layout.tsx", "app/(es)/layout.tsx", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/inventory-project.mjs"]
     },
     {
       "id": "auth_session_authorization_review",
@@ -211,7 +212,7 @@
       "falseNegatives": "Hosted checkout and offline transactions may not appear in source.",
       "recommendedAction": "If payments are confirmed, have the owner and payment specialist determine data flow and PCI scope.",
       "ownerApprovalRequiredForRiskDecision": true,
-      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "docs/security/PROJECT-SECURITY-PROFILE.md"]
+      "provenance": ["docs/security/PROJECT-AWARE-CHECK-MATRIX.md", "scripts/security/inventory-project.mjs"]
     },
     {
       "id": "database_access_retention_review",
