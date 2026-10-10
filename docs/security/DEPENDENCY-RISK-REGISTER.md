@@ -6,9 +6,11 @@
 
 **Owner for decisions:** VitaNova Creations / project owner
 
-**Scope:** Phase 2C.3 recorded the checked-in lockfile at `2160c9e`. Phase 2C.5 records the current, uncommitted local dependency patch. No production change is verified.
+**Scope:** Phase 2C.3 recorded the checked-in lockfile at `2160c9e`. Phase 2C.5 patched the lockfile at `c10d1d4`. Phase 3A adds a proposed automated audit baseline. No production change is verified by this register.
 
 **Decision state:** Five `js-yaml` advisories are **resolved** in the tested local lockfile by the `3.15.2` override. Three advisories remain **open**; none is formally accepted. Revisit open risks by **2026-11-09**, and sooner on the triggers below.
+
+**Phase 3A CI proposal:** A fresh 2026-10-09 audit again found 17 flagged package entries from these same three source IDs. `DEPENDENCY-AUDIT-BASELINE.json` lists their exact installed copies. Its approval status is **pending**; the CI audit job fails on these baseline findings until the owner records an explicit, time-limited approval. New or worsened findings fail independently. This proposed baseline does not change the open status of any record below.
 
 ## Baseline and interpretation
 
