@@ -12,7 +12,7 @@ export async function pageMetadata(page: Page, lang: Lang): Promise<Metadata> {
   const title = page === 'home' ? m.homeTitle(place) : m.storyTitle;
   const description = page === 'home' ? m.homeDescription(place) : m.storyDescription(place);
   // Share cards live in public/og/ (1200×630). Replace them freely; keep the file names.
-  const image = { url: `/og/share-${lang}.png`, width: 1200, height: 630, alt: `La Segundita — ${copy[lang].hero.title.join(' ')}` };
+  const image = { url: absoluteUrl(`/og/share-${lang}.png`), width: 1200, height: 630, alt: `La Segundita — ${copy[lang].hero.title.join(' ')}` };
   return {
     metadataBase: new URL(siteUrl),
     title: { absolute: title }, description,
