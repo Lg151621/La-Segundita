@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "security-approval-policy",
   "policyId": "vitanova-security-approval-policy",
   "status": "guidance",
@@ -105,10 +105,10 @@
     { "id": "approver_role", "description": "The policy role in which the approver acted (a person may hold several roles; record which one applied)." },
     { "id": "exact_approval", "description": "The approver's own words, quoted or linked, naming the scope approved." },
     { "id": "decision_timestamp", "description": "When the decision was made, with time zone." },
-    { "id": "expiry_or_review_trigger", "description": "Expiry date and the events that end the decision early (new or changed finding, changed exposure, architecture change)." },
+    { "id": "expiry_or_review_trigger", "description": "Expiry date and the re-review triggers that end the decision early (new or changed finding, changed exposure, architecture change). Risk acceptances and gate weakening record both." },
     { "id": "verification", "description": "How the result was verified after execution, and what was not verified." },
     { "id": "audit_trail", "description": "Where the record lives (commit, pull request, register entry) so it can be reviewed later." },
-    { "id": "delegation_record", "description": "When a client delegates a decision in writing: who delegated, to which role, for what scope and until when." }
+    { "id": "delegation_record", "description": "When a client delegates a decision in writing: who delegated, to which role, for what scope and until when, and confirmation that it is still valid (not expired, revoked or exceeded) for this exact operation." }
   ],
   "prohibitedEvidenceContent": ["secret_values", "credentials_or_tokens", "personal_data", "production_data_extracts"],
   "conditions": [
@@ -117,6 +117,8 @@
     { "id": "conflicting_signals", "description": "Evidence, tools or people disagree.", "escalatesTo": ["vitanova_technical_owner"] },
     { "id": "scope_beyond_approval", "description": "The work would go beyond what was approved.", "escalatesTo": ["vitanova_technical_owner", "client_decision_maker"] },
     { "id": "new_or_changed_risk", "description": "A new finding, worse severity, changed path or changed exposure appears.", "escalatesTo": ["vitanova_technical_owner"] },
+    { "id": "client_account_access_change", "description": "The change alters who or what can access the client's accounts, CMS, hosting, data stores or users.", "escalatesTo": ["client_decision_maker"] },
+    { "id": "delegation_not_valid", "description": "No written, scoped, still-valid delegation covers this exact operation.", "escalatesTo": ["client_decision_maker"] },
     { "id": "material_client_impact", "description": "The change could materially affect the client's users, data, accounts, availability, costs or obligations.", "escalatesTo": ["client_decision_maker"] },
     { "id": "production_impact", "description": "The change affects a live environment, live users or live data.", "escalatesTo": ["client_decision_maker"] },
     { "id": "personal_or_regulated_data", "description": "Personal, sensitive, payment, health or otherwise regulated data may be involved.", "escalatesTo": ["client_decision_maker", "specialist_reviewer"] },
@@ -141,59 +143,59 @@
       "name": "Compatible dependency update",
       "class": "owner_reviewed_change",
       "examples": ["Patch or minor update inside the declared range, with a lockfile diff limited to the targeted package."],
-      "boundary": "Becomes a major-update or broad-churn decision if the version range, major version or unrelated lockfile entries change.",
+      "boundary": "Within the technical owner's existing authority: patch or minor inside the declared range, lockfile diff limited to the target. Escalate material client impact, changed account access, regulated data or work outside the approved scope.",
       "requiredApprovals": ["vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "personal_or_regulated_data", "conflicting_signals"]
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
     },
     {
       "id": "dependency_override",
       "name": "Dependency override or resolution",
       "class": "owner_reviewed_change",
       "examples": ["An npm overrides entry forcing a patched transitive version under one parent package."],
-      "boundary": "Record why the override is needed and the event that should remove it (an upstream release).",
+      "boundary": "Within the technical owner's existing authority. Record why the override is needed and the upstream release that should remove it; escalate as for compatible updates.",
       "requiredApprovals": ["vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
       "requiresExpiryOrReviewTrigger": true,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
-      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "personal_or_regulated_data", "conflicting_signals"]
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
     },
     {
       "id": "dependency_major_or_downgrade",
       "name": "Major dependency upgrade or any downgrade",
       "class": "owner_reviewed_change",
       "examples": ["Moving a framework or CMS to a new major version; any automated fix that downgrades a package."],
-      "boundary": "Never apply forced audit fixes; propose one tested change at a time.",
+      "boundary": "Within the technical owner's existing authority; never apply forced audit fixes; propose one tested change at a time and escalate as for compatible updates.",
       "requiredApprovals": ["vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["production_impact", "material_client_impact", "personal_or_regulated_data", "conflicting_signals"]
+      "escalateWhen": ["production_impact", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
     },
     {
       "id": "lockfile_broad_churn",
       "name": "Lockfile changes beyond the targeted entries",
       "class": "owner_reviewed_change",
       "examples": ["A dependency change that also moves unrelated packages, or a full lockfile regeneration."],
-      "boundary": "Stop and present the exact lockfile diff before keeping it.",
+      "boundary": "Stop and present the exact lockfile diff before keeping it; escalate as for compatible updates.",
       "requiredApprovals": ["vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "personal_or_regulated_data", "scope_beyond_approval"]
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval"]
     },
     {
       "id": "secret_or_credential_change",
       "name": "Secret or credential creation, rotation or revocation",
       "class": "owner_reviewed_change",
       "examples": ["Adding a webhook secret to the hosting provider; rotating an API token; revoking an exposed credential."],
-      "boundary": "Automation never sees, prints or stores secret values. Only routine rotation inside an explicit, scoped, written delegation may skip the client's per-change approval; everything else needs both approvals.",
+      "boundary": "Automation never sees, prints or stores secret values. Only routine rotation inside an explicit, scoped, written, still-valid delegation may skip the client's per-change approval; everything else needs both approvals.",
       "requiredApprovals": ["vitanova_technical_owner", "client_decision_maker"],
       "delegableTo": ["vitanova_technical_owner"],
       "delegationLimits": {
@@ -202,20 +204,20 @@
       },
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["production_impact", "unknown_authority", "material_client_impact"]
+      "escalateWhen": ["delegation_not_valid", "production_impact", "unknown_authority", "material_client_impact"]
     },
     {
       "id": "authentication_authorization_change",
       "name": "Authentication or authorization change",
       "class": "owner_reviewed_change",
       "examples": ["Changing login, sessions, roles, route protection or webhook signature verification."],
-      "boundary": "Requires tests of the denied paths, not only the allowed ones.",
+      "boundary": "Within the technical owner's existing authority for code changes; test denied paths, not only allowed ones. Changes to who can access client accounts or users, regulated data, material client impact or work outside the approved scope escalate.",
       "requiredApprovals": ["vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["material_client_impact", "personal_or_regulated_data", "production_impact"]
+      "escalateWhen": ["material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "production_impact"]
     },
     {
       "id": "cms_permission_change",
@@ -235,7 +237,7 @@
       "name": "Publishing or unpublishing client content",
       "class": "owner_reviewed_change",
       "examples": ["Publishing store hours, photos or announcements on the client's behalf."],
-      "boundary": "Content and facts belong to the client. Only content the client supplied or approved, inside an explicit, scoped, written delegation, may be published without per-item approval; never invent business facts.",
+      "boundary": "Content and facts belong to the client. Only content the client supplied or approved, inside an explicit, scoped, written, still-valid delegation, may be published without per-item approval; never invent business facts.",
       "requiredApprovals": ["client_decision_maker"],
       "delegableTo": ["vitanova_technical_owner"],
       "delegationLimits": {
@@ -244,7 +246,7 @@
       },
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["unknown_authority", "legal_or_contractual_question", "personal_or_regulated_data"]
+      "escalateWhen": ["delegation_not_valid", "unknown_authority", "legal_or_contractual_question", "personal_or_regulated_data"]
     },
     {
       "id": "ci_gate_strengthen",
@@ -264,7 +266,7 @@
       "name": "Disable, downgrade, skip or bypass a security gate",
       "class": "client_risk_acceptance",
       "examples": ["Making a failing audit job non-blocking, skipping the secret scan, extending a dependency baseline."],
-      "boundary": "Weakening a control is a risk acceptance: it needs both the client and the technical owner, an expiry, and is never done to make a build pass silently. Never delegable.",
+      "boundary": "Weakening or bypassing a control is a risk acceptance: it needs both the client decision-maker and the technical owner, a bounded scope, documented evidence, an expiry and re-review triggers. Never silent, never to make a build pass quietly, never delegable.",
       "requiredApprovals": ["client_decision_maker", "vitanova_technical_owner"],
       "delegableTo": [],
       "delegationLimits": null,
@@ -290,7 +292,7 @@
       "name": "Production deployment",
       "class": "owner_reviewed_change",
       "examples": ["Merging to the production branch or promoting a build that serves live users."],
-      "boundary": "Requires passing project checks and a rollback path. Only routine releases inside an explicit, scoped, written delegation may skip the client's per-release approval.",
+      "boundary": "Requires passing project checks and a rollback path. Only routine releases inside an explicit, scoped, written, still-valid delegation may skip the client's per-release approval.",
       "requiredApprovals": ["vitanova_technical_owner", "client_decision_maker"],
       "delegableTo": ["vitanova_technical_owner"],
       "delegationLimits": {
@@ -299,7 +301,7 @@
       },
       "requiresExpiryOrReviewTrigger": false,
       "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
-      "escalateWhen": ["production_impact", "new_or_changed_risk", "material_client_impact"]
+      "escalateWhen": ["delegation_not_valid", "production_impact", "new_or_changed_risk", "material_client_impact"]
     },
     {
       "id": "risk_acceptance",

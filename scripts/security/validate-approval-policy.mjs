@@ -20,8 +20,11 @@ const CHECKLIST_EVIDENCE = [...CORE_EVIDENCE, 'affected_asset', 'source_evidence
   'expiry_or_review_trigger', 'delegation_record'];
 const PROHIBITED_CONTENT = ['secret_values', 'credentials_or_tokens', 'personal_data', 'production_data_extracts'];
 const STOP_CONDITIONS = ['unknown_authority', 'insufficient_evidence', 'conflicting_signals'];
-// Escalations that dependency and authentication changes must always carry (owner-approved, client/specialist on impact).
-const IMPACT_ESCALATIONS = ['material_client_impact', 'personal_or_regulated_data'];
+// Escalations that dependency and authentication changes must always carry: they stay technical-owner approved within
+// existing authority, and escalate material client impact, changed account access, regulated data and out-of-scope work.
+const IMPACT_ESCALATIONS = ['material_client_impact', 'client_account_access_change', 'personal_or_regulated_data', 'scope_beyond_approval'];
+// Conditions that must bring the client decision-maker in.
+const CLIENT_ESCALATIONS = ['material_client_impact', 'client_account_access_change', 'delegation_not_valid'];
 const OWNER_APPROVED_WITH_ESCALATION = ['dependency_compatible_update', 'dependency_override', 'dependency_major_or_downgrade',
   'lockfile_broad_churn', 'authentication_authorization_change'];
 // Decisions that a written delegation can never cover.
@@ -36,6 +39,8 @@ export const REQUIRED_ACTIONS = ['routine_scoped_change', 'dependency_compatible
   'ci_gate_weaken_or_bypass', 'production_data_access', 'production_deployment', 'risk_acceptance',
   'risk_acceptance_renewal', 'regulatory_applicability_determination', 'compliance_claim_publication'];
 
+// v2: v1 policies lacked the account-access and delegation escalations that v2 requires.
+export const SCHEMA_VERSION = 2;
 const TOP_KEYS = ['schemaVersion', 'kind', 'policyId', 'status', 'boundaries', 'defaultRule', 'roles', 'approvalClasses',
   'evidenceFields', 'prohibitedEvidenceContent', 'conditions', 'actions'];
 const BOUNDARY_FLAGS = ['grantsApproval', 'isEnforcementEngine', 'isLegalAdvice', 'establishesSigningAuthority',
@@ -103,7 +108,8 @@ function uniqueItems(list, keys, label) {
 export function validateApprovalPolicy(policy) {
   if (!object(policy)) fail('top level must be an object');
   exactKeys(policy, TOP_KEYS, 'top level');
-  if (policy.schemaVersion !== 1) fail('unsupported schemaVersion');
+  if (policy.schemaVersion === 1) fail('schemaVersion 1 is no longer supported; update the policy to schemaVersion 2');
+  if (policy.schemaVersion !== SCHEMA_VERSION) fail('unsupported schemaVersion');
   if (policy.kind !== 'security-approval-policy') fail('unexpected kind');
   if (typeof policy.policyId !== 'string' || !POLICY_ID_PATTERN.test(policy.policyId)) fail('invalid policyId');
   if (policy.status !== 'guidance') fail('status must be "guidance"; the policy never records or grants approval');
@@ -146,13 +152,15 @@ export function validateApprovalPolicy(policy) {
 
   const conditionIds = uniqueItems(policy.conditions, ['id', 'description', 'escalatesTo'], 'conditions');
   if (!STOP_CONDITIONS.every(id => conditionIds.has(id))) fail('conditions must include the default stop conditions');
-  if (!IMPACT_ESCALATIONS.every(id => conditionIds.has(id))) fail('conditions must include client-impact and regulated-data escalations');
+  if (![...IMPACT_ESCALATIONS, 'delegation_not_valid'].every(id => conditionIds.has(id))) {
+    fail('conditions must include client-impact, account-access, regulated-data, out-of-scope and delegation escalations');
+  }
   for (const condition of policy.conditions) {
     if (!text(condition.description)) fail(`${condition.id}: description required`);
     if (!idList(condition.escalatesTo) || !subset(condition.escalatesTo, authorizers)) fail(`${condition.id}: escalatesTo must name human roles that can authorize`);
   }
   const conditions = Object.fromEntries(policy.conditions.map(item => [item.id, item]));
-  if (!conditions.material_client_impact.escalatesTo.includes('client_decision_maker')) fail('material_client_impact must escalate to the client decision-maker');
+  for (const id of CLIENT_ESCALATIONS) if (!conditions[id].escalatesTo.includes('client_decision_maker')) fail(`${id} must escalate to the client decision-maker`);
   if (!conditions.personal_or_regulated_data.escalatesTo.includes('specialist_reviewer')) fail('personal_or_regulated_data must escalate to a specialist reviewer');
 
   const classIds = uniqueItems(policy.approvalClasses, CLASS_KEYS, 'approvalClasses');
@@ -193,6 +201,8 @@ export function validateApprovalPolicy(policy) {
     if (action.delegableTo.length && (action.class === 'client_risk_acceptance' || NEVER_DELEGABLE.includes(action.id))) fail(`${action.id}: cannot be delegated`);
     // A delegation covers routine work only: delegable actions must spell out what it covers and what it never covers.
     if (action.delegableTo.length) {
+      // Delegated work stops when no written, scoped, still-valid delegation covers it.
+      if (!action.escalateWhen.includes('delegation_not_valid')) fail(`${action.id}: delegable actions must escalate when no valid delegation applies`);
       const limits = action.delegationLimits;
       if (!object(limits)) fail(`${action.id}: delegable actions must define delegationLimits`);
       exactKeys(limits, ['routineScope', 'excludedSensitiveOperations'], `${action.id} delegationLimits`);
@@ -206,7 +216,7 @@ export function validateApprovalPolicy(policy) {
     }
     if (OWNER_APPROVED_WITH_ESCALATION.includes(action.id)) {
       if (action.requiredApprovals.length !== 1 || action.requiredApprovals[0] !== 'vitanova_technical_owner') fail(`${action.id}: must remain technical-owner approved`);
-      if (!subset(IMPACT_ESCALATIONS, action.escalateWhen)) fail(`${action.id}: must escalate material client impact and regulated data`);
+      if (!subset(IMPACT_ESCALATIONS, action.escalateWhen)) fail(`${action.id}: must escalate material client impact, account access, regulated data and out-of-scope work`);
     }
     if (typeof action.requiresExpiryOrReviewTrigger !== 'boolean') fail(`${action.id}: requiresExpiryOrReviewTrigger must be boolean`);
     if (action.class === 'client_risk_acceptance' && !action.requiresExpiryOrReviewTrigger) fail(`${action.id}: risk acceptance must expire or have a review trigger`);
