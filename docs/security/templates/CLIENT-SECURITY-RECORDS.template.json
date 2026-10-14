@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "kind": "client-security-records",
+  "recordStatus": "template",
+  "policy": { "policyId": "vitanova-security-approval-policy", "schemaVersion": 2 },
+  "boundaries": {
+    "grantsApproval": false,
+    "verifiesIdentity": false,
+    "verifiesAuthenticity": false,
+    "isLegalAdvice": false,
+    "note": "BLANK TEMPLATE. Contains no real role holders, delegations, approvals or risk acceptances. Copy it into a client project only with the owner's approval, replace every REPLACE value, and record only decisions a human actually made."
+  },
+  "project": { "id": "replace-with-project-id", "note": "REPLACE: short, non-sensitive project description." },
+  "storage": {
+    "location": "private_access_controlled",
+    "sensitiveDataReview": "not_reviewed",
+    "note": "REPLACE: the private, access-controlled system holding these records and who may read them. Do not store client records in Git unless the client explicitly decides so, and never commit them automatically."
+  },
+  "roleAssignments": [
+    {
+      "id": "technical-owner",
+      "role": "vitanova_technical_owner",
+      "holderRef": "replace-technical-owner-ref",
+      "holdsOtherRoles": false,
+      "verification": "unverified",
+      "evidenceRefs": [],
+      "confirmedAt": null,
+      "confirmedByRole": null,
+      "endedAt": null,
+      "note": "REPLACE: opaque holder reference only; keep names and contact details in the engagement records, not here."
+    },
+    {
+      "id": "client-decision-maker",
+      "role": "client_decision_maker",
+      "holderRef": "replace-client-ref",
+      "holdsOtherRoles": false,
+      "verification": "unverified",
+      "evidenceRefs": [],
+      "confirmedAt": null,
+      "confirmedByRole": null,
+      "endedAt": null,
+      "note": "REPLACE: confirm in writing who the client designates; never assume it."
+    }
+  ],
+  "delegations": [
+    {
+      "id": "delegation-replace",
+      "action": "production_deployment",
+      "status": "proposed",
+      "grantorAssignmentRef": "client-decision-maker",
+      "recipientAssignmentRef": "technical-owner",
+      "scope": "REPLACE: exact routine operations covered, within the policy's routine scope for this action.",
+      "policyExclusionsApply": true,
+      "evidenceRefs": [],
+      "issuedAt": null,
+      "expiresOn": null,
+      "revokedAt": null,
+      "verification": "unverified"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision-replace",
+      "action": "dependency_compatible_update",
+      "status": "proposed",
+      "scope": "REPLACE: exactly what is covered, and what is explicitly not covered.",
+      "changeRefs": [],
+      "escalations": [],
+      "delegationRef": null,
+      "delegatedScopeConfirmation": null,
+      "signoffs": [],
+      "conditions": [],
+      "reviewBy": null,
+      "expiresOn": null,
+      "reviewTriggers": [],
+      "note": "REPLACE: a proposed decision is a request, not an approval."
+    }
+  ],
+  "riskAcceptances": [],
+  "auditTrail": []
+}
