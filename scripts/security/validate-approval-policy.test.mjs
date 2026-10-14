@@ -67,7 +67,17 @@ test('refinements: delegation is limited to routine scope for secrets, deploymen
     assert.deepEqual(action(policy, id).requiredApprovals, ['vitanova_technical_owner'], id);
     assert.ok(['material_client_impact', 'personal_or_regulated_data'].every(condition => action(policy, id).escalateWhen.includes(condition)), id);
   }
+  for (const id of ['dependency_compatible_update', 'dependency_override', 'dependency_major_or_downgrade', 'lockfile_broad_churn', 'authentication_authorization_change']) {
+    for (const condition of ['client_account_access_change', 'scope_beyond_approval']) assert.ok(action(policy, id).escalateWhen.includes(condition), `${id} ${condition}`);
+  }
+  for (const id of delegable) {
+    assert.ok(action(policy, id).escalateWhen.includes('delegation_not_valid'), id);
+    assert.match(action(policy, id).boundary, /still-valid delegation/, id);
+  }
+  assert.match(action(policy, 'ci_gate_weaken_or_bypass').boundary, /bounded scope, documented evidence, an expiry and re-review triggers/);
   const escalation = Object.fromEntries(policy.conditions.map(item => [item.id, item.escalatesTo]));
+  assert.deepEqual(escalation.client_account_access_change, ['client_decision_maker']);
+  assert.deepEqual(escalation.delegation_not_valid, ['client_decision_maker']);
   assert.deepEqual(escalation.material_client_impact, ['client_decision_maker']);
   assert.ok(escalation.personal_or_regulated_data.includes('specialist_reviewer'));
 });
@@ -89,7 +99,9 @@ test('a recorded project approval is not a policy and is rejected', () => {
 
 const rejections = [
   ['non-object input', () => [], /top level/],
-  ['unsupported schema version', value => { value.schemaVersion = 2; }, /schemaVersion/],
+  ['retired schema version 1', value => { value.schemaVersion = 1; }, /schemaVersion 1 is no longer supported/],
+  ['unsupported schema version', value => { value.schemaVersion = 3; }, /unsupported schemaVersion/],
+  ['schema version as a string', value => { value.schemaVersion = '2'; }, /unsupported schemaVersion/],
   ['unknown top-level field', value => { value.extra = true; }, /unknown/],
   ['status other than guidance', value => { value.status = 'active'; }, /guidance/],
   ['boundary claims to grant approval', value => { value.boundaries.grantsApproval = true; }, /grantsApproval/],
@@ -121,8 +133,16 @@ const rejections = [
   ['missing client-impact condition', value => { value.conditions = value.conditions.filter(item => item.id !== 'material_client_impact'); }, /client-impact/],
   ['client impact not escalated to the client', value => { value.conditions.find(item => item.id === 'material_client_impact').escalatesTo = ['vitanova_technical_owner']; }, /client decision-maker/],
   ['regulated data not escalated to a specialist', value => { value.conditions.find(item => item.id === 'personal_or_regulated_data').escalatesTo = ['client_decision_maker']; }, /specialist reviewer/],
-  ['dependency change without impact escalation', value => { action(value, 'dependency_compatible_update').escalateWhen = ['new_or_changed_risk']; }, /material client impact and regulated data/],
-  ['authentication change without regulated-data escalation', value => { action(value, 'authentication_authorization_change').escalateWhen = ['material_client_impact']; }, /material client impact and regulated data/],
+  ['dependency change without impact escalation', value => { action(value, 'dependency_compatible_update').escalateWhen = ['new_or_changed_risk']; }, /must escalate material client impact/],
+  ['authentication change without regulated-data escalation', value => { action(value, 'authentication_authorization_change').escalateWhen = ['material_client_impact']; }, /must escalate material client impact/],
+  // Phase 4B.1 finalization.
+  ['dependency change without out-of-scope escalation', value => { const item = action(value, 'dependency_override'); item.escalateWhen = item.escalateWhen.filter(id => id !== 'scope_beyond_approval'); }, /out-of-scope work/],
+  ['authentication change without account-access escalation', value => { const item = action(value, 'authentication_authorization_change'); item.escalateWhen = item.escalateWhen.filter(id => id !== 'client_account_access_change'); }, /account access/],
+  ['missing account-access condition', value => { value.conditions = value.conditions.filter(item => item.id !== 'client_account_access_change'); }, /account-access/],
+  ['missing delegation condition', value => { value.conditions = value.conditions.filter(item => item.id !== 'delegation_not_valid'); }, /delegation escalations/],
+  ['account-access change not escalated to the client', value => { value.conditions.find(item => item.id === 'client_account_access_change').escalatesTo = ['vitanova_technical_owner']; }, /client_account_access_change must escalate to the client/],
+  ['invalid delegation not escalated to the client', value => { value.conditions.find(item => item.id === 'delegation_not_valid').escalatesTo = ['vitanova_technical_owner']; }, /delegation_not_valid must escalate to the client/],
+  ['delegable action that ignores invalid delegation', value => { const item = action(value, 'production_deployment'); item.escalateWhen = item.escalateWhen.filter(id => id !== 'delegation_not_valid'); }, /no valid delegation/],
   ['dependency change no longer owner-approved', value => { action(value, 'dependency_override').requiredApprovals = ['client_decision_maker', 'vitanova_technical_owner']; }, /technical-owner approved/],
   ['delegable CMS permission change', value => { const item = action(value, 'cms_permission_change'); item.delegableTo = ['vitanova_technical_owner']; }, /cannot be delegated/],
   ['delegable production data access', value => { const item = action(value, 'production_data_access'); item.delegableTo = ['vitanova_technical_owner']; }, /cannot be delegated/],
