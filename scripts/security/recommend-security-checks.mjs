@@ -16,6 +16,11 @@ function text(value) {
 }
 function bounded(values, limit = 5) { return values.slice(0, limit).map(text); }
 
+// The catalog's executionStatus is what the VitaNova toolkit can do, not what a project has. Nothing this report reads
+// shows that a check is configured, ran or passed in the target project, so those stay `not_verified`; project-local
+// files only show that something is documented (additive in report schema 1, Phase 4C.2).
+const TOOLKIT_CAPABILITY = { automated_now: 'automatable_with_toolkit', future_implementation: 'planned_not_yet_automated', human_review: 'human_review_only' };
+
 // Inventories produced before Phase 4A carry no support block; treat both dimensions as unknown.
 const UNASSESSED = { status: 'unknown', id: null, detected: [], evidence: [], reasons: ['support_not_assessed'] };
 function supportOf(inventory) {
@@ -106,6 +111,8 @@ export function recommendSecurityChecks(inventory, catalog, referenceRoot, optio
         'so its result does not cover this project. Use the package manager\'s own advisory tooling and review manually.');
     }
     const localPaths = projectEvidence?.checks?.[check.id] ?? [];
+    const localEvidence = localPaths.slice(0, MAX_EVIDENCE).map(path => ({ path: text(path), status: evidenceStatus(options.projectRoot, path) }));
+    const coverageGap = check.requiresSupportedPackageManager === true && packageManagerLimited;
     return {
       id: check.id,
       name: text(check.name),
@@ -120,8 +127,14 @@ export function recommendSecurityChecks(inventory, catalog, referenceRoot, optio
       ownerApprovalRequiredForRiskDecision: check.ownerApprovalRequiredForRiskDecision,
       provenance: bounded(check.provenance),
       supportNotes: bounded(supportNotes, 3),
-      projectEvidence: localPaths.slice(0, MAX_EVIDENCE).map(path => ({ path: text(path), status: evidenceStatus(options.projectRoot, path) })),
+      projectEvidence: localEvidence,
       projectEvidenceOmitted: Math.max(0, localPaths.length - MAX_EVIDENCE),
+      projectStatus: {
+        toolkitCapability: coverageGap ? 'toolkit_does_not_cover_this_project' : TOOLKIT_CAPABILITY[check.executionStatus],
+        configuration: localEvidence.some(item => item.status === 'present') ? 'project_files_present_not_verified' : 'not_verified',
+        execution: 'not_verified',
+        result: 'not_verified',
+      },
     };
   });
 
@@ -137,10 +150,12 @@ export function recommendSecurityChecks(inventory, catalog, referenceRoot, optio
       ? 'Confirm applicability from missing, uncertain, conflicting, or incomplete evidence.'
       : check.disposition === 'not_currently_indicated'
         ? 'Confirm external or offline feature use before relying on this bounded non-detection.'
-        : check.executionStatus === 'automated_now' && check.supportNotes.length
-          ? 'Existing automation does not cover this project type; arrange an equivalent check and review it separately.'
-        : check.executionStatus === 'automated_now'
-          ? 'Review the actual check result separately; this report did not run the check.'
+        : check.projectStatus.toolkitCapability === 'toolkit_does_not_cover_this_project'
+          ? 'The toolkit automation does not cover this project type; arrange an equivalent check and review its result separately.'
+        : check.projectStatus.toolkitCapability === 'automatable_with_toolkit' && check.projectStatus.configuration === 'project_files_present_not_verified'
+          ? 'Project files suggest this check is set up, but file presence is not a run or a pass; confirm a recent run and review its result.'
+        : check.projectStatus.toolkitCapability === 'automatable_with_toolkit'
+          ? 'The toolkit can automate this check, but nothing shows it is configured or has run in this project; arrange it and review a real result.'
           : 'Confirm applicability and arrange this check; no execution result is recorded.',
   }));
   const report = {

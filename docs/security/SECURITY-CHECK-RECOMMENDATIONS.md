@@ -18,7 +18,17 @@ The output has `schemaVersion: 1`, `tool: "security-check-recommendations"`, `in
 
 Phase 4A adds `projectSupport` (framework and package-manager status from the inventory, plus `nonDetectionReliable`), per-check `supportNotes[]`, and per-check `projectEvidence[]` with an omitted count. These fields are additive within report schema version 1. When the framework status is anything other than `supported` (`partial`, `unsupported`, or `unknown`, including an inventory without a support block), `not_currently_indicated` is never used: unmatched conditional checks become `needs_human_review` with a rationale naming the support status. When the package manager is not supported, checks marked `requiresSupportedPackageManager` keep their disposition but carry a note that the existing npm-only automation does not cover the project, and their human-confirmation item asks for an equivalent check. Neither state means the project is insecure or secure.
 
-The `humanConfirmation[]` list records a follow-up for each check: review the actual result of existing automation, arrange a proposed check, resolve uncertain applicability, or verify external use behind a bounded non-detection. The `boundaries` object states that this tool executed zero checks and determined no check result, risk acceptance, or legal compliance. `executionStatus: "automated_now"` means separate automation exists; this report does not read its latest result.
+The `humanConfirmation[]` list records a follow-up for each check: review the actual result of existing automation, arrange a proposed check, resolve uncertain applicability, or verify external use behind a bounded non-detection. The `boundaries` object states that this tool executed zero checks and determined no check result, risk acceptance, or legal compliance. `executionStatus` repeats the catalog's **toolkit capability** (kept for compatibility); `automated_now` means the toolkit can automate the check, not that the project has.
+
+Phase 4C.2 adds `projectStatus` to each recommendation, additive within report schema version 1 (older reports without it remain valid):
+
+| Field | Values | Meaning |
+| --- | --- | --- |
+| `toolkitCapability` | `automatable_with_toolkit`, `planned_not_yet_automated`, `human_review_only`, `toolkit_does_not_cover_this_project` | What the toolkit can do; the last value marks npm-only automation on a project with another or unknown package manager. |
+| `configuration` | `not_verified`, `project_files_present_not_verified` | Whether this project shows the check is set up. Listed project-local files that exist give the second value; file presence is still not a verified setup. |
+| `execution`, `result` | `not_verified` | The current schema does not track runs or results, so this report never claims a check ran or passed. |
+
+For a project with no CI and no recorded results, the safe statement is: *the toolkit can automate this check; the project's setup, any run and any result are not verified.* The human-confirmation item then asks someone to arrange the check and review a real result. The Markdown summary prints this status for every recommended or needs-review check.
 
 ## Current La Segundita example
 

@@ -110,6 +110,8 @@ The inventory, catalog and recommendation report remain `schemaVersion: 1`. Phas
 
 Risk approvals, baselines and expiry dates are decisions by one owner for one project. A Skill may explain how to record them, but must never ship, reuse or infer them.
 
+**Skill V1 candidate (Phase 4C.1).** `skills/vitanova-security/` is generated from the "Ship" column by `node scripts/security/build-skill-bundle.mjs --write` (check drift with `--check`). It bundles the scripts' full import closure, the catalog, policy, templates and sanitized reference documents, and none of the "Keep" column. Verify it anywhere with `node --test skills/vitanova-security/tests/skill.test.mjs`; see its `README.md`.
+
 ## Reusable Skill Knowledge
 
 - **Invocation pattern:** run `inventory-project.mjs --root`, then `validate-check-catalog.mjs --root`, then `recommend-security-checks.mjs --root` and the formatter. Ship scripts, catalog and reusable references together so the default reference root resolves inside the Skill.

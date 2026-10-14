@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 2,
+  "kind": "security-approval-policy",
+  "policyId": "vitanova-security-approval-policy",
+  "status": "guidance",
+  "boundaries": {
+    "grantsApproval": false,
+    "isEnforcementEngine": false,
+    "isLegalAdvice": false,
+    "establishesSigningAuthority": false,
+    "detectionImpliesLegalApplicability": false,
+    "passingCheckIsApproval": false,
+    "recommendationIsAuthorization": false,
+    "note": "Portable guidance describing who must decide what, and what evidence to record per project. It records no decision, authorizes nothing, and does not change any existing gate."
+  },
+  "defaultRule": {
+    "onUnknownAuthority": "stop_and_request_review",
+    "onInsufficientEvidence": "stop_and_request_review",
+    "onConflictingSignals": "stop_and_request_review",
+    "onScopeBeyondApproval": "stop_and_request_review",
+    "implicitRiskAcceptance": false,
+    "silenceIsApproval": false,
+    "assumeDelegation": false
+  },
+  "roles": [
+    {
+      "id": "vitanova_technical_owner",
+      "name": "Designated VitaNova technical owner or maintainer",
+      "description": "The person the project records as responsible for the codebase and its security tooling. Reviews and authorizes technical work within the scope the client has engaged VitaNova for.",
+      "canRecommend": true,
+      "canAuthorize": true,
+      "canExecute": true
+    },
+    {
+      "id": "client_decision_maker",
+      "name": "Authorized client decision-maker",
+      "description": "The person the client has designated, per project, to decide on its accounts, content, users, data, releases and risk. VitaNova does not assume who this is.",
+      "canRecommend": true,
+      "canAuthorize": true,
+      "canExecute": false
+    },
+    {
+      "id": "specialist_reviewer",
+      "name": "Specialist reviewer (legal, privacy, compliance or security)",
+      "description": "A qualified reviewer engaged for a question outside engineering judgment. Issues determinations only within their own qualification and engagement.",
+      "canRecommend": true,
+      "canAuthorize": true,
+      "canExecute": false
+    },
+    {
+      "id": "automation_agent",
+      "name": "Automation (Claude Code, Codex, CI)",
+      "description": "Inspects, proposes, runs read-only checks, and executes work only after the required human authorization is recorded. Never authorizes.",
+      "canRecommend": true,
+      "canAuthorize": false,
+      "canExecute": true
+    }
+  ],
+  "approvalClasses": [
+    {
+      "id": "routine_implementation",
+      "name": "Routine low-risk implementation",
+      "description": "Work explicitly requested and scoped, with no change to security controls, dependencies, secrets, access, data or production.",
+      "recommendedBy": ["automation_agent", "vitanova_technical_owner"],
+      "authorizedBy": ["vitanova_technical_owner"],
+      "executedBy": ["automation_agent", "vitanova_technical_owner"],
+      "minimumEvidence": ["project_id", "change_or_risk_id", "scope", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"]
+    },
+    {
+      "id": "owner_reviewed_change",
+      "name": "Technical or security change needing owner review",
+      "description": "Changes to dependencies, security controls, access, CI, deployments or client systems. The technical owner reviews; the client decision-maker also authorizes when its accounts, content, users, data or releases are affected.",
+      "recommendedBy": ["automation_agent", "vitanova_technical_owner", "specialist_reviewer"],
+      "authorizedBy": ["vitanova_technical_owner", "client_decision_maker"],
+      "executedBy": ["automation_agent", "vitanova_technical_owner"],
+      "minimumEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"]
+    },
+    {
+      "id": "client_risk_acceptance",
+      "name": "Client-owned risk acceptance",
+      "description": "Knowingly keeping a known weakness, weakening a control, or renewing an exception. Only the client decision-maker accepts risk; acceptance is time-limited and does not fix anything.",
+      "recommendedBy": ["automation_agent", "vitanova_technical_owner", "specialist_reviewer"],
+      "authorizedBy": ["client_decision_maker"],
+      "executedBy": ["vitanova_technical_owner"],
+      "minimumEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"]
+    },
+    {
+      "id": "specialist_determination",
+      "name": "Specialist or legal determination",
+      "description": "Whether a law, standard or contract applies, and whether a claim about it may be made. Decided by a qualified specialist; the client decides whether to act on or publish it.",
+      "recommendedBy": ["automation_agent", "vitanova_technical_owner"],
+      "authorizedBy": ["specialist_reviewer"],
+      "executedBy": ["vitanova_technical_owner"],
+      "minimumEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"]
+    }
+  ],
+  "evidenceFields": [
+    { "id": "project_id", "description": "Stable project or client identifier." },
+    { "id": "change_or_risk_id", "description": "Ticket, pull request, advisory or risk identifier the decision is about." },
+    { "id": "scope", "description": "Exactly what is covered, and what is explicitly not covered." },
+    { "id": "affected_asset", "description": "Repository paths, packages, services, accounts or environments affected." },
+    { "id": "source_evidence", "description": "Links or relative paths to audit output, diffs, test results or advisories relied on." },
+    { "id": "alternatives", "description": "Options considered, including doing nothing, and why they were not chosen." },
+    { "id": "potential_impact", "description": "What could go wrong, for whom, and how it would be noticed." },
+    { "id": "approver_role", "description": "The policy role in which the approver acted (a person may hold several roles; record which one applied)." },
+    { "id": "exact_approval", "description": "The approver's own words, quoted or linked, naming the scope approved." },
+    { "id": "decision_timestamp", "description": "When the decision was made, with time zone." },
+    { "id": "expiry_or_review_trigger", "description": "Expiry date and the re-review triggers that end the decision early (new or changed finding, changed exposure, architecture change). Risk acceptances and gate weakening record both." },
+    { "id": "verification", "description": "How the result was verified after execution, and what was not verified." },
+    { "id": "audit_trail", "description": "Where the record lives (commit, pull request, register entry) so it can be reviewed later." },
+    { "id": "delegation_record", "description": "When a client delegates a decision in writing: who delegated, to which role, for what scope and until when, and confirmation that it is still valid (not expired, revoked or exceeded) for this exact operation." }
+  ],
+  "prohibitedEvidenceContent": ["secret_values", "credentials_or_tokens", "personal_data", "production_data_extracts"],
+  "conditions": [
+    { "id": "unknown_authority", "description": "It is unclear who may approve.", "escalatesTo": ["vitanova_technical_owner", "client_decision_maker"] },
+    { "id": "insufficient_evidence", "description": "Required evidence is missing or unverified.", "escalatesTo": ["vitanova_technical_owner"] },
+    { "id": "conflicting_signals", "description": "Evidence, tools or people disagree.", "escalatesTo": ["vitanova_technical_owner"] },
+    { "id": "scope_beyond_approval", "description": "The work would go beyond what was approved.", "escalatesTo": ["vitanova_technical_owner", "client_decision_maker"] },
+    { "id": "new_or_changed_risk", "description": "A new finding, worse severity, changed path or changed exposure appears.", "escalatesTo": ["vitanova_technical_owner"] },
+    { "id": "client_account_access_change", "description": "The change alters who or what can access the client's accounts, CMS, hosting, data stores or users.", "escalatesTo": ["client_decision_maker"] },
+    { "id": "delegation_not_valid", "description": "No written, scoped, still-valid delegation covers this exact operation.", "escalatesTo": ["client_decision_maker"] },
+    { "id": "material_client_impact", "description": "The change could materially affect the client's users, data, accounts, availability, costs or obligations.", "escalatesTo": ["client_decision_maker"] },
+    { "id": "production_impact", "description": "The change affects a live environment, live users or live data.", "escalatesTo": ["client_decision_maker"] },
+    { "id": "personal_or_regulated_data", "description": "Personal, sensitive, payment, health or otherwise regulated data may be involved.", "escalatesTo": ["client_decision_maker", "specialist_reviewer"] },
+    { "id": "legal_or_contractual_question", "description": "A law, standard or contract may apply.", "escalatesTo": ["specialist_reviewer"] }
+  ],
+  "actions": [
+    {
+      "id": "routine_scoped_change",
+      "name": "Scoped low-risk implementation",
+      "class": "routine_implementation",
+      "examples": ["Documentation, tests, or refactors explicitly requested, with no security, dependency or production effect."],
+      "boundary": "Becomes an owner-reviewed change as soon as it touches dependencies, controls, secrets, access, CI or production.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["scope_beyond_approval", "conflicting_signals"]
+    },
+    {
+      "id": "dependency_compatible_update",
+      "name": "Compatible dependency update",
+      "class": "owner_reviewed_change",
+      "examples": ["Patch or minor update inside the declared range, with a lockfile diff limited to the targeted package."],
+      "boundary": "Within the technical owner's existing authority: patch or minor inside the declared range, lockfile diff limited to the target. Escalate material client impact, changed account access, regulated data or work outside the approved scope.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
+    },
+    {
+      "id": "dependency_override",
+      "name": "Dependency override or resolution",
+      "class": "owner_reviewed_change",
+      "examples": ["An npm overrides entry forcing a patched transitive version under one parent package."],
+      "boundary": "Within the technical owner's existing authority. Record why the override is needed and the upstream release that should remove it; escalate as for compatible updates.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
+    },
+    {
+      "id": "dependency_major_or_downgrade",
+      "name": "Major dependency upgrade or any downgrade",
+      "class": "owner_reviewed_change",
+      "examples": ["Moving a framework or CMS to a new major version; any automated fix that downgrades a package."],
+      "boundary": "Within the technical owner's existing authority; never apply forced audit fixes; propose one tested change at a time and escalate as for compatible updates.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["production_impact", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "conflicting_signals"]
+    },
+    {
+      "id": "lockfile_broad_churn",
+      "name": "Lockfile changes beyond the targeted entries",
+      "class": "owner_reviewed_change",
+      "examples": ["A dependency change that also moves unrelated packages, or a full lockfile regeneration."],
+      "boundary": "Stop and present the exact lockfile diff before keeping it; escalate as for compatible updates.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval"]
+    },
+    {
+      "id": "secret_or_credential_change",
+      "name": "Secret or credential creation, rotation or revocation",
+      "class": "owner_reviewed_change",
+      "examples": ["Adding a webhook secret to the hosting provider; rotating an API token; revoking an exposed credential."],
+      "boundary": "Automation never sees, prints or stores secret values. Only routine rotation inside an explicit, scoped, written, still-valid delegation may skip the client's per-change approval; everything else needs both approvals.",
+      "requiredApprovals": ["vitanova_technical_owner", "client_decision_maker"],
+      "delegableTo": ["vitanova_technical_owner"],
+      "delegationLimits": {
+        "routineScope": ["Rotating an existing secret on its documented schedule to the same scope and services, following a written runbook"],
+        "excludedSensitiveOperations": ["Creating a production credential or granting new access scope", "Changing which services or people can use a secret", "Revoking or replacing a credential after suspected exposure (notify the client decision-maker immediately)", "Payment, identity-provider or data-store credentials"]
+      },
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["delegation_not_valid", "production_impact", "unknown_authority", "material_client_impact"]
+    },
+    {
+      "id": "authentication_authorization_change",
+      "name": "Authentication or authorization change",
+      "class": "owner_reviewed_change",
+      "examples": ["Changing login, sessions, roles, route protection or webhook signature verification."],
+      "boundary": "Within the technical owner's existing authority for code changes; test denied paths, not only allowed ones. Changes to who can access client accounts or users, regulated data, material client impact or work outside the approved scope escalate.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["material_client_impact", "client_account_access_change", "personal_or_regulated_data", "scope_beyond_approval", "production_impact"]
+    },
+    {
+      "id": "cms_permission_change",
+      "name": "CMS roles, members, datasets or API access change",
+      "class": "owner_reviewed_change",
+      "examples": ["Inviting an editor, changing a dataset's visibility, adding a CORS origin or API token."],
+      "boundary": "The client decides who may access its CMS and the technical owner reviews the technical effect. Never delegable.",
+      "requiredApprovals": ["client_decision_maker", "vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["unknown_authority", "personal_or_regulated_data"]
+    },
+    {
+      "id": "cms_content_publish",
+      "name": "Publishing or unpublishing client content",
+      "class": "owner_reviewed_change",
+      "examples": ["Publishing store hours, photos or announcements on the client's behalf."],
+      "boundary": "Content and facts belong to the client. Only content the client supplied or approved, inside an explicit, scoped, written, still-valid delegation, may be published without per-item approval; never invent business facts.",
+      "requiredApprovals": ["client_decision_maker"],
+      "delegableTo": ["vitanova_technical_owner"],
+      "delegationLimits": {
+        "routineScope": ["Publishing content the client supplied or approved, such as hours, photos, announcements or listings, within the delegated scope"],
+        "excludedSensitiveOperations": ["New business claims, prices or offers the client did not supply", "Legal, privacy, accessibility or compliance statements", "Content with personal data about identifiable people", "Deleting or unpublishing client content", "Changing who may edit or publish (cms_permission_change)"]
+      },
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["delegation_not_valid", "unknown_authority", "legal_or_contractual_question", "personal_or_regulated_data"]
+    },
+    {
+      "id": "ci_gate_strengthen",
+      "name": "Add or tighten a CI security gate",
+      "class": "owner_reviewed_change",
+      "examples": ["Making a review-only job blocking; adding a new required check."],
+      "boundary": "A new blocking gate can stop deployments; review false-positive behavior before enabling it.",
+      "requiredApprovals": ["vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["production_impact", "conflicting_signals"]
+    },
+    {
+      "id": "ci_gate_weaken_or_bypass",
+      "name": "Disable, downgrade, skip or bypass a security gate",
+      "class": "client_risk_acceptance",
+      "examples": ["Making a failing audit job non-blocking, skipping the secret scan, extending a dependency baseline."],
+      "boundary": "Weakening or bypassing a control is a risk acceptance: it needs both the client decision-maker and the technical owner, a bounded scope, documented evidence, an expiry and re-review triggers. Never silent, never to make a build pass quietly, never delegable.",
+      "requiredApprovals": ["client_decision_maker", "vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "production_impact"]
+    },
+    {
+      "id": "production_data_access",
+      "name": "Access to production data",
+      "class": "owner_reviewed_change",
+      "examples": ["Reading a live database, exporting CMS documents with personal data, querying production logs."],
+      "boundary": "Least access, time-limited, no copies in repositories or reports. Requires the client and the technical owner for each access; never delegable.",
+      "requiredApprovals": ["client_decision_maker", "vitanova_technical_owner"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["personal_or_regulated_data", "legal_or_contractual_question"]
+    },
+    {
+      "id": "production_deployment",
+      "name": "Production deployment",
+      "class": "owner_reviewed_change",
+      "examples": ["Merging to the production branch or promoting a build that serves live users."],
+      "boundary": "Requires passing project checks and a rollback path. Only routine releases inside an explicit, scoped, written, still-valid delegation may skip the client's per-release approval.",
+      "requiredApprovals": ["vitanova_technical_owner", "client_decision_maker"],
+      "delegableTo": ["vitanova_technical_owner"],
+      "delegationLimits": {
+        "routineScope": ["Releases of reviewed content, styling, copy or bug fixes whose project checks pass, within the delegated scope and period"],
+        "excludedSensitiveOperations": ["First production launch, domain or DNS changes", "Releases changing authentication, authorization, secrets, payments, data handling or CI gates", "Schema or data migrations affecting live data", "Releases with failing, skipped or weakened security checks", "Anything outside the delegated scope or period"]
+      },
+      "requiresExpiryOrReviewTrigger": false,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "verification", "audit_trail"],
+      "escalateWhen": ["delegation_not_valid", "production_impact", "new_or_changed_risk", "material_client_impact"]
+    },
+    {
+      "id": "risk_acceptance",
+      "name": "Accept a known risk temporarily",
+      "class": "client_risk_acceptance",
+      "examples": ["Keeping an unpatchable transitive advisory while upstream has no fix."],
+      "boundary": "Exact findings only, with expiry; any new or changed finding, changed exposure or expiry ends it.",
+      "requiredApprovals": ["client_decision_maker"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "personal_or_regulated_data"]
+    },
+    {
+      "id": "risk_acceptance_renewal",
+      "name": "Renew or extend an existing risk acceptance",
+      "class": "client_risk_acceptance",
+      "examples": ["Extending an expiring dependency exception after a fresh audit."],
+      "boundary": "Requires a fresh review; an expired acceptance is open until renewed and is never renewed automatically.",
+      "requiredApprovals": ["client_decision_maker"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "alternatives", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["new_or_changed_risk", "conflicting_signals"]
+    },
+    {
+      "id": "regulatory_applicability_determination",
+      "name": "Decide whether a law, standard or contract applies",
+      "class": "specialist_determination",
+      "examples": ["Whether payment, health, privacy or accessibility obligations apply after a detected integration."],
+      "boundary": "Technology detection raises a question for a specialist; it never decides applicability.",
+      "requiredApprovals": ["specialist_reviewer"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["legal_or_contractual_question", "personal_or_regulated_data"]
+    },
+    {
+      "id": "compliance_claim_publication",
+      "name": "State or publish a regulatory or compliance claim",
+      "class": "specialist_determination",
+      "examples": ["Telling a client, customer or website visitor that a system meets a named law or standard."],
+      "boundary": "Needs a specialist determination and the client's approval to publish; automation never makes such claims.",
+      "requiredApprovals": ["specialist_reviewer", "client_decision_maker"],
+      "delegableTo": [],
+      "delegationLimits": null,
+      "requiresExpiryOrReviewTrigger": true,
+      "requiredEvidence": ["project_id", "change_or_risk_id", "scope", "affected_asset", "source_evidence", "potential_impact", "approver_role", "exact_approval", "decision_timestamp", "expiry_or_review_trigger", "verification", "audit_trail"],
+      "escalateWhen": ["legal_or_contractual_question", "conflicting_signals"]
+    }
+  ]
+}

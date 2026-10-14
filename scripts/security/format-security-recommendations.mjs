@@ -17,6 +17,14 @@ const MANIFEST_STATES = new Set(['valid', 'missing', 'invalid', 'too_large']);
 const ID_PATTERN = /^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$/;
 const SUPPORT_STATUSES = new Set(['supported', 'partial', 'unsupported', 'unknown']);
 const EVIDENCE_STATUSES = new Set(['present', 'missing', 'not_regular_file', 'not_checked']);
+// Phase 4C.2, optional: toolkit capability kept apart from what is verified in the project.
+const CAPABILITY_TEXT = { automatable_with_toolkit: 'toolkit can automate', planned_not_yet_automated: 'not yet automated',
+  human_review_only: 'human review', toolkit_does_not_cover_this_project: 'toolkit automation does not cover this project' };
+const CONFIGURATION_TEXT = { not_verified: 'project setup not verified', project_files_present_not_verified: 'project files present, setup not verified' };
+function validProjectStatus(value) {
+  return value === undefined || (object(value) && Object.keys(value).length === 4 && Object.hasOwn(CAPABILITY_TEXT, value.toolkitCapability) &&
+    Object.hasOwn(CONFIGURATION_TEXT, value.configuration) && value.execution === 'not_verified' && value.result === 'not_verified');
+}
 
 function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
 function integer(value, max) { return Number.isSafeInteger(value) && value >= 0 && value <= max; }
@@ -98,7 +106,7 @@ export function validateRecommendationReport(report) {
         !check.evidenceRequired.every(value => typeof value === 'string' && value.length > 0) ||
         !Array.isArray(check.provenance) || check.provenance.length === 0 ||
         !check.provenance.every(safeProvenance) ||
-        (check.supportNotes !== undefined && !shortStrings(check.supportNotes, 3)) ||
+        (check.supportNotes !== undefined && !shortStrings(check.supportNotes, 3)) || !validProjectStatus(check.projectStatus) ||
         (check.projectEvidence !== undefined && (!Array.isArray(check.projectEvidence) || check.projectEvidence.length > MAX_EVIDENCE ||
           !check.projectEvidence.every(item => object(item) && safeProvenance(item.path) && EVIDENCE_STATUSES.has(item.status))))) invalid();
     ids.add(check.id);
@@ -140,7 +148,8 @@ export function formatRecommendationSummary(report) {
   const lines = [
     '## Security check recommendations (review only)',
     '',
-    '**Proposals only.** This report did not execute or pass checks, accept risk, determine legal compliance, or prove a feature absent.',
+    '**Proposals only.** This report did not execute or pass checks, accept risk, determine legal compliance, or prove a feature absent. ' +
+      'Toolkit capability is not project setup: no check below is shown as configured, run, or passed in this project.',
     '',
     `Source files inspected: ${report.scan.sourceFilesInspected}. Scan: **${report.scan.complete ? 'complete within the inventory scope' : 'incomplete; human review required'}**.`,
     `Recommended: **${report.summary.recommended}** · Needs human review: **${report.summary.needsHumanReview}** · Not indicated within inspected scope: **${report.summary.notCurrentlyIndicated}**.`,
@@ -174,7 +183,9 @@ export function formatRecommendationSummary(report) {
     if (!checks.length) lines.push('None in this group.');
     for (const check of checks) {
       const notes = (check.supportNotes ?? []).map(note => ` Note: ${escaped(note)}`).join('');
-      lines.push(`- ${code(check.id)} — **${disposition}**. ${evidenceFor(check)}${notes}`);
+      const status = check.projectStatus && disposition !== 'not_currently_indicated'
+        ? ` Status: ${CAPABILITY_TEXT[check.projectStatus.toolkitCapability]}; ${CONFIGURATION_TEXT[check.projectStatus.configuration]}; run and result not verified.` : '';
+      lines.push(`- ${code(check.id)} — **${disposition}**. ${evidenceFor(check)}${status}${notes}`);
     }
     lines.push('');
   }

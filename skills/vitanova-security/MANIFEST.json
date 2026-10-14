@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "kind": "vitanova-security-skill-manifest",
+  "skill": "vitanova-security",
+  "version": "1.0.0-candidate",
+  "contracts": {
+    "approvalPolicySchemaVersion": 2,
+    "checkCatalogSchemaVersion": 1,
+    "inventorySchemaVersion": 1,
+    "clientRecordsSchemaVersion": 1,
+    "dependencyBaselineSchemaVersion": 1,
+    "renewalPacketVersion": 1
+  },
+  "supportedPackageManagersForDependencyAudit": [
+    "npm"
+  ],
+  "entrypoints": [
+    "scripts/security/inventory-project.mjs",
+    "scripts/security/format-project-inventory.mjs",
+    "scripts/security/validate-check-catalog.mjs",
+    "scripts/security/recommend-security-checks.mjs",
+    "scripts/security/format-security-recommendations.mjs",
+    "scripts/security/check-dependency-audit.mjs",
+    "scripts/security/validate-approval-policy.mjs",
+    "scripts/security/validate-client-records.mjs",
+    "scripts/security/assess-risk-renewal.mjs"
+  ],
+  "bundledScripts": [
+    "scripts/security/assess-risk-renewal.mjs",
+    "scripts/security/check-dependency-audit.mjs",
+    "scripts/security/format-project-inventory.mjs",
+    "scripts/security/format-security-recommendations.mjs",
+    "scripts/security/inventory-project.mjs",
+    "scripts/security/recommend-security-checks.mjs",
+    "scripts/security/security-cli.mjs",
+    "scripts/security/validate-approval-policy.mjs",
+    "scripts/security/validate-check-catalog.mjs",
+    "scripts/security/validate-client-records.mjs"
+  ],
+  "files": [
+    {
+      "path": "docs/security/CLIENT-SECURITY-RECORDS.md",
+      "sha256": "cb04c307741acf8f56dff522d1566655c38c20d4fc1d3251dfc1651cd609294a",
+      "source": "docs/security/CLIENT-SECURITY-RECORDS.md",
+      "transform": "sanitized"
+    },
+    {
+      "path": "docs/security/PROJECT-AWARE-CHECK-MATRIX.md",
+      "sha256": "aa649f4f3df0b85ca3e4df783aadfaff64e6bb8a40726da1ee63f1b8a2f314ac",
+      "source": "docs/security/PROJECT-AWARE-CHECK-MATRIX.md",
+      "transform": "sanitized"
+    },
+    {
+      "path": "docs/security/PROJECT-INVENTORY-AUTOMATION.md",
+      "sha256": "af3c6af57f1c911b832e4bdc8e0c1a6d55cdcfe9bcafc95a7e03bb4e32568325",
+      "source": "docs/security/PROJECT-INVENTORY-AUTOMATION.md",
+      "transform": "sanitized"
+    },
+    {
+      "path": "docs/security/RISK-RENEWAL-PROCEDURE.md",
+      "sha256": "bc5e0a52304af57aae3472c181cddde855007d3f669ab3b8ab8d748c1693d9d7",
+      "source": "docs/security/RISK-RENEWAL-PROCEDURE.md",
+      "transform": "copy"
+    },
+    {
+      "path": "docs/security/SECURITY-APPROVAL-POLICY.json",
+      "sha256": "a8750a6f1f0827c7987603faf893b242fbb7499af12fb2750da34a5a61299625",
+      "source": "docs/security/SECURITY-APPROVAL-POLICY.json",
+      "transform": "copy"
+    },
+    {
+      "path": "docs/security/SECURITY-APPROVAL-POLICY.md",
+      "sha256": "a0dac4d989ebef3ebcfa7570a33454ae9040299198fb216d293c7906d92f62c3",
+      "source": "docs/security/SECURITY-APPROVAL-POLICY.md",
+      "transform": "sanitized"
+    },
+    {
+      "path": "docs/security/SECURITY-CHECK-CATALOG.json",
+      "sha256": "569533bb8ac86390b6e02bf1847480e89051f52be4b397167884377679580b96",
+      "source": "docs/security/SECURITY-CHECK-CATALOG.json",
+      "transform": "copy"
+    },
+    {
+      "path": "docs/security/templates/CLIENT-SECURITY-RECORDS.template.json",
+      "sha256": "5ed1175d940153c90f0d4d7b58f3318a74e21c1d1e1876228e86d146d6467a15",
+      "source": "docs/security/templates/CLIENT-SECURITY-RECORDS.template.json",
+      "transform": "copy"
+    },
+    {
+      "path": "docs/security/templates/RISK-RENEWAL-DECISION.template.md",
+      "sha256": "b936a66f26fb018ec977baf54374515efd292d45d3bc7162bc663a0bb5a9923a",
+      "source": "docs/security/templates/RISK-RENEWAL-DECISION.template.md",
+      "transform": "copy"
+    },
+    {
+      "path": "README.md",
+      "sha256": "8d44e1bc9a2418bd9a2e196666695072dc90fd1947a0ef16bea7fd77eb03ab96",
+      "source": null,
+      "transform": "authored"
+    },
+    {
+      "path": "scripts/security/assess-risk-renewal.mjs",
+      "sha256": "bb6feb130869506e69f4b36246d70713a8946de17332189aebf030df33f9f60c",
+      "source": "scripts/security/assess-risk-renewal.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/check-dependency-audit.mjs",
+      "sha256": "8013a06b53f706be14dd931e73f9fad33f380a78f4fe027a0b978e670d18cdaa",
+      "source": "scripts/security/check-dependency-audit.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/fixtures/client-records/example-fictional-bakery.json",
+      "sha256": "ac735957ebc5a184a07d50fdf6090d51b0d9b812aeebd0310b457b6e3cfcea52",
+      "source": "scripts/security/fixtures/client-records/example-fictional-bakery.json",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/format-project-inventory.mjs",
+      "sha256": "6b1628132e48605841d3038e0313567d43f5831e865e73b775e152ea87ee4cc3",
+      "source": "scripts/security/format-project-inventory.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/format-security-recommendations.mjs",
+      "sha256": "c7e7731c6b53cdd21c085b7e193e869a3dfe1e7464b03b94ecb7ad26ff3b650e",
+      "source": "scripts/security/format-security-recommendations.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/inventory-project.mjs",
+      "sha256": "7ef2b55821e44a8d17f6cab226ed343fc1c2341c089368ff81122f60a5c64eae",
+      "source": "scripts/security/inventory-project.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/recommend-security-checks.mjs",
+      "sha256": "4b2982f60cab82f353e4f2d61dbe1b238193c46b0e0c560a9347de9419fa01cd",
+      "source": "scripts/security/recommend-security-checks.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/security-cli.mjs",
+      "sha256": "69a50362aae972821fddad718d3df09e5bd9f7aade42605a4d15783e34ecb2c9",
+      "source": "scripts/security/security-cli.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/validate-approval-policy.mjs",
+      "sha256": "516c119cebe955ed4984c959e8b053681fec7c42cd4a810492dcd9da36311b6e",
+      "source": "scripts/security/validate-approval-policy.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/validate-check-catalog.mjs",
+      "sha256": "0408cc4af5efb4c59aa968de469f3558dfa5ef6d81969fc9bb6a799f79f69c8a",
+      "source": "scripts/security/validate-check-catalog.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/validate-client-records.mjs",
+      "sha256": "f27ac3ecc80c8ed6e6a59b1d6c0d33ae5de4f0aa892f04f2c34d58834c0a2315",
+      "source": "scripts/security/validate-client-records.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "scripts/security/validate-client-records.test.mjs",
+      "sha256": "89525375b312cfce1959e348b3a8337232babacbbac65b19d08b1c3bdae687b9",
+      "source": "scripts/security/validate-client-records.test.mjs",
+      "transform": "copy"
+    },
+    {
+      "path": "SKILL.md",
+      "sha256": "bee4a5638162116c633b147f7a8d2c8d071bc06572dbe2d32dfc1f1f21446215",
+      "source": null,
+      "transform": "authored"
+    },
+    {
+      "path": "tests/skill.test.mjs",
+      "sha256": "31e6611b16bd823a6204350f36f9ed1e7ddb5bb8547ce77e50513c83c5ad17a3",
+      "source": null,
+      "transform": "authored"
+    }
+  ]
+}
