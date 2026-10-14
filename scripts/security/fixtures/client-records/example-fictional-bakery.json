@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "kind": "client-security-records",
+  "recordStatus": "synthetic_example",
+  "policy": { "policyId": "vitanova-security-approval-policy", "schemaVersion": 2 },
+  "boundaries": {
+    "grantsApproval": false,
+    "verifiesIdentity": false,
+    "verifiesAuthenticity": false,
+    "isLegalAdvice": false,
+    "note": "SYNTHETIC EXAMPLE for tests and documentation. The bakery, people, findings and decisions are fictitious. Nothing here is a real authorization."
+  },
+  "project": { "id": "example-fictional-bakery", "note": "Fictional bakery marketing site used only to exercise the validator." },
+  "storage": { "location": "git_repository", "sensitiveDataReview": "reviewed_no_sensitive_content", "note": "Synthetic data only; real client records belong in private, access-controlled storage." },
+  "roleAssignments": [
+    {
+      "id": "owner-example", "role": "vitanova_technical_owner", "holderRef": "example-maintainer-a", "holdsOtherRoles": false, "verification": "human_confirmed",
+      "evidenceRefs": ["doc:example-engagement-letter"], "confirmedAt": "2026-08-03T10:00:00-07:00", "confirmedByRole": "client_decision_maker",
+      "endedAt": null, "note": null
+    },
+    {
+      "id": "client-example", "role": "client_decision_maker", "holderRef": "example-bakery-owner", "holdsOtherRoles": false, "verification": "human_confirmed",
+      "evidenceRefs": ["doc:example-engagement-letter"], "confirmedAt": "2026-08-03T10:00:00-07:00", "confirmedByRole": "vitanova_technical_owner",
+      "endedAt": null, "note": null
+    },
+    {
+      "id": "specialist-example", "role": "specialist_reviewer", "holderRef": "example-privacy-reviewer", "holdsOtherRoles": false, "verification": "unverified",
+      "evidenceRefs": [], "confirmedAt": null, "confirmedByRole": null, "endedAt": null, "note": "Not yet engaged."
+    }
+  ],
+  "delegations": [
+    {
+      "id": "delegation-routine-releases", "action": "production_deployment", "status": "active",
+      "grantorAssignmentRef": "client-example", "recipientAssignmentRef": "owner-example",
+      "scope": "Releases of reviewed copy, styling and bug fixes with passing project checks.", "policyExclusionsApply": true,
+      "evidenceRefs": ["doc:example-signed-delegation-001"], "issuedAt": "2026-09-01T09:00:00-07:00", "expiresOn": "2027-02-28",
+      "revokedAt": null, "verification": "human_confirmed"
+    },
+    {
+      "id": "delegation-menu-publishing", "action": "cms_content_publish", "status": "proposed",
+      "grantorAssignmentRef": "client-example", "recipientAssignmentRef": "owner-example",
+      "scope": "Publishing weekly menu photos the bakery supplies.", "policyExclusionsApply": true,
+      "evidenceRefs": [], "issuedAt": null, "expiresOn": null, "revokedAt": null, "verification": "unverified"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "decision-override-example", "action": "dependency_override", "status": "approved",
+      "scope": "Pin one transitive example package under one parent; no other lockfile changes.", "changeRefs": ["pr:example-12"],
+      "escalations": [], "delegationRef": null, "delegatedScopeConfirmation": null,
+      "signoffs": [
+        { "assignmentRef": "owner-example", "role": "vitanova_technical_owner", "decision": "approved", "decidedAt": "2026-09-10T14:30:00-07:00",
+          "evidenceRefs": ["pr:example-12"], "verification": "human_confirmed" }
+      ],
+      "conditions": ["Remove the override when the parent ships a patched release."], "reviewBy": "2026-12-01", "expiresOn": "2027-01-31",
+      "reviewTriggers": ["Parent package releases a patched version"], "note": null
+    },
+    {
+      "id": "decision-release-example", "action": "production_deployment", "status": "approved",
+      "scope": "Release of the autumn menu copy update.", "changeRefs": ["pr:example-14"], "escalations": [],
+      "delegationRef": "delegation-routine-releases",
+      "delegatedScopeConfirmation": { "confirmedByRole": "vitanova_technical_owner", "confirmedAt": "2026-09-20T10:55:00-07:00", "evidenceRefs": ["pr:example-14"] },
+      "signoffs": [
+        { "assignmentRef": "owner-example", "role": "vitanova_technical_owner", "decision": "approved", "decidedAt": "2026-09-20T11:00:00-07:00",
+          "evidenceRefs": ["pr:example-14"], "verification": "human_confirmed" }
+      ],
+      "conditions": [], "reviewBy": null, "expiresOn": null, "reviewTriggers": [], "note": null
+    },
+    {
+      "id": "decision-editor-invite", "action": "cms_permission_change", "status": "pending",
+      "scope": "Invite one additional bakery editor to the CMS.", "changeRefs": ["ticket:example-31"], "escalations": [],
+      "delegationRef": null, "delegatedScopeConfirmation": null,
+      "signoffs": [
+        { "assignmentRef": "client-example", "role": "client_decision_maker", "decision": "approved", "decidedAt": "2026-10-01T16:00:00-07:00",
+          "evidenceRefs": ["ticket:example-31"], "verification": "human_confirmed" }
+      ],
+      "conditions": [], "reviewBy": null, "expiresOn": null, "reviewTriggers": [], "note": "Awaiting technical owner review."
+    },
+    {
+      "id": "decision-risk-example", "action": "risk_acceptance", "status": "approved",
+      "scope": "Accept one fictional transitive advisory in the build tooling path only.", "changeRefs": ["ticket:example-40"],
+      "escalations": [], "delegationRef": null, "delegatedScopeConfirmation": null,
+      "signoffs": [
+        { "assignmentRef": "client-example", "role": "client_decision_maker", "decision": "approved", "decidedAt": "2026-10-02T09:15:00-07:00",
+          "evidenceRefs": [], "verification": "unverified" }
+      ],
+      "conditions": ["No visitor-controlled input reaches the affected function."], "reviewBy": "2026-11-15", "expiresOn": "2026-11-30",
+      "reviewTriggers": ["Patched release available", "Changed dependency path", "New reachable input"], "note": null
+    },
+    {
+      "id": "decision-gate-example", "action": "ci_gate_weaken_or_bypass", "status": "proposed",
+      "scope": "Proposed: make the example audit job non-blocking for one week.", "changeRefs": [], "escalations": [],
+      "delegationRef": null, "delegatedScopeConfirmation": null, "signoffs": [], "conditions": [], "reviewBy": null, "expiresOn": null, "reviewTriggers": [],
+      "note": "A proposal is not an approval."
+    }
+  ],
+  "riskAcceptances": [
+    {
+      "id": "risk-example-advisory", "decisionRef": "decision-risk-example", "renewsRef": null,
+      "findings": [ { "id": "EXAMPLE-ADVISORY-0001", "source": "npm audit (fictional)", "affectedAsset": "node_modules/example-glob" } ],
+      "compensatingControls": ["Build runs only in CI with read-only tokens."],
+      "residualRiskRationale": "Fictional: the vulnerable function is reachable only from build tooling with trusted input.",
+      "evidenceRefs": ["ticket:example-40"]
+    }
+  ],
+  "auditTrail": [
+    { "id": "audit-1", "recordRef": "owner-example", "event": "confirmed", "actorRole": "client_decision_maker", "actorRef": "example-bakery-owner",
+      "at": "2026-08-03T10:00:00-07:00", "evidenceRefs": ["doc:example-engagement-letter"], "note": null },
+    { "id": "audit-2", "recordRef": "client-example", "event": "confirmed", "actorRole": "vitanova_technical_owner", "actorRef": "example-maintainer-a",
+      "at": "2026-08-03T10:00:00-07:00", "evidenceRefs": ["doc:example-engagement-letter"], "note": null },
+    { "id": "audit-3", "recordRef": "delegation-routine-releases", "event": "recorded", "actorRole": "vitanova_technical_owner", "actorRef": "example-maintainer-a",
+      "at": "2026-09-01T09:30:00-07:00", "evidenceRefs": ["doc:example-signed-delegation-001"], "note": null },
+    { "id": "audit-4", "recordRef": "decision-override-example", "event": "recorded", "actorRole": "automation_agent", "actorRef": null,
+      "at": "2026-09-10T14:35:00-07:00", "evidenceRefs": ["pr:example-12"], "note": "Recorded by automation after the human approval; automation did not approve." },
+    { "id": "audit-5", "recordRef": "decision-release-example", "event": "recorded", "actorRole": "vitanova_technical_owner", "actorRef": "example-maintainer-a",
+      "at": "2026-09-20T11:05:00-07:00", "evidenceRefs": ["pr:example-14"], "note": null }
+  ]
+}

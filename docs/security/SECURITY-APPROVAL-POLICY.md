@@ -118,7 +118,7 @@ The schema is **version 2** and **strict**: unknown fields are rejected. Version
 | --- | --- |
 | This policy document and `SECURITY-APPROVAL-POLICY.json`; `validate-approval-policy.mjs` and its tests; the evidence checklist and action IDs as vocabulary | Who holds each role; written delegations; every decision record (risk acceptances, renewals, exceptions, deployment approvals); dependency baselines and expiries; the project's security profile, evidence file and CI configuration |
 
-A Skill may explain how to record a decision. It must never ship, copy, reuse, renew or infer one, and it must never carry one client's approvals or findings into another client's project.
+A Skill may explain how to record a decision. It must never ship, copy, reuse, renew or infer one, and it must never carry one client's approvals or findings into another client's project. The per-project record format, blank template and read-only validator are described in [CLIENT-SECURITY-RECORDS.md](CLIENT-SECURITY-RECORDS.md).
 
 ## Limitations
 
